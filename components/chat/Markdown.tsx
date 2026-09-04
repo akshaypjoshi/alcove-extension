@@ -5,7 +5,7 @@ import { Check, Copy } from "lucide-react";
  * A deliberately small renderer instead of a markdown dependency: fenced
  * code, inline code, bold, italics, and links cover essentially everything
  * a chat reply uses, and the whole thing is ~60 lines with no parser to
- * keep patched. Nothing here inserts HTML — every branch returns React
+ * keep patched. Nothing here inserts HTML - every branch returns React
  * elements, so there's no innerHTML path to sanitize.
  */
 

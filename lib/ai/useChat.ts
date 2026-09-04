@@ -6,7 +6,7 @@ import { ProviderError, type ChatMessage } from "./types";
  * The payoff for the adapter layer: this hook is provider-blind, and the
  * three UIs (newtab, sidepanel, floating chat iframe) all import it.
  *
- * Note where this runs. Call it from an extension-origin document — the
+ * Note where this runs. Call it from an extension-origin document - the
  * side panel, /chat.html inside the injected iframe, or the newtab page.
  * Do NOT run it in a content script: MV3 content scripts inherit the host
  * page's origin for fetch, so you'd be back to relaying every token

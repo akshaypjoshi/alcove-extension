@@ -38,6 +38,11 @@ import {
   type Settings,
 } from "@/lib/settings";
 import { TOOLS } from "@/lib/tools";
+import {
+  companionEnabled,
+  disableCompanion,
+  enableCompanion,
+} from "@/lib/companion";
 import type { RecentSource } from "@/lib/recents";
 import { WIDGETS, resolveConfig } from "@/lib/widgets";
 import { WIDGET_SIZE_LABEL } from "@/components/widgets/WidgetCard";
@@ -503,7 +508,7 @@ function LocationPicker({ settings, update }: TabProps) {
   const [busy, setBusy] = useState(false);
   const current = settings.weather.location;
 
-  // Debounced, and aborted on every keystroke — the geocoder answers fast
+  // Debounced, and aborted on every keystroke - the geocoder answers fast
   // enough that un-cancelled requests routinely land out of order.
   useEffect(() => {
     const term = query.trim();
@@ -594,8 +599,8 @@ function LocationPicker({ settings, update }: TabProps) {
 
 /**
  * Keyed by instance id, not widget type. The registry allows several
- * instances of the same widget — four clocks in four zones is the whole
- * point of the clock widget — so a type-keyed edit would rewrite every
+ * instances of the same widget - four clocks in four zones is the whole
+ * point of the clock widget - so a type-keyed edit would rewrite every
  * one of them at once, and a type-keyed toggle would delete them all.
  */
 function WidgetsTab({ settings, update }: TabProps) {
@@ -892,6 +897,47 @@ function ToolsTab({ settings, update }: TabProps) {
   );
 }
 
+/**
+ * The launcher needs <all_urls>, which Chrome will only grant from a user
+ * gesture - so the switch calls permissions.request directly rather than
+ * writing a setting that something else acts on later.
+ */
+function CompanionRow() {
+  const [on, setOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    companionEnabled.getValue().then((v) => setOn(Boolean(v)));
+    return companionEnabled.watch((v) => setOn(Boolean(v)));
+  }, []);
+
+  const change = async (next: boolean) => {
+    setBusy(true);
+    try {
+      if (next) {
+        // Declining the prompt leaves the switch off rather than showing
+        // it on with nothing behind it.
+        const granted = await enableCompanion();
+        setOn(granted);
+      } else {
+        await disableCompanion();
+        setOn(false);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Row
+      label="Chat on any page"
+      hint="Adds a launcher button to every site. Asks for access when you turn it on, and hands it back when you turn it off."
+    >
+      <Switch checked={on} disabled={busy} onCheckedChange={change} />
+    </Row>
+  );
+}
+
 function AiTab({ settings, update }: TabProps) {
   const { keys, setKey } = useApiKeys();
   const [models, setModels] = useState<ModelInfo[] | null>(null);
@@ -920,12 +966,24 @@ function AiTab({ settings, update }: TabProps) {
 
   return (
     <div className="space-y-4">
+      <div className="divide-y">
+        <CompanionRow />
+      </div>
+
       <div className="space-y-1.5">
         <Label>Provider</Label>
         <Select
           value={providerId}
           onValueChange={(id) => {
             const next = PROVIDER_LIST.find((p) => p.id === id)!;
+            // Ollama talks to a server on this machine, so localhost is an
+            // optional permission asked for here - inside the gesture that
+            // picked it - rather than granted to everyone at install.
+            if (id === "ollama") {
+              Promise.resolve(
+                browser.permissions.request({ origins: ["http://localhost/*"] }),
+              ).catch(() => false);
+            }
             update({ ai: { ...settings.ai, providerId: id, model: next.defaultModel } });
           }}
         >
@@ -975,7 +1033,7 @@ function AiTab({ settings, update }: TabProps) {
             ? "Key works."
             : status === "bad"
               ? "That key was rejected."
-              : "Stored in local extension storage on this device — never synced, never sent anywhere but the provider."}
+              : "Stored in local extension storage on this device - never synced, never sent anywhere but the provider."}
         </p>
       </div>
 
@@ -1019,8 +1077,8 @@ function AboutTab({ reset }: { reset: () => void }) {
       <div>
         <h3 className="font-medium">Alcove</h3>
         <p className="text-muted-foreground text-xs">
-          A calmer new tab, with a chat that follows you around. Everything —
-          wallpapers, notes, links, keys — stays on your machine.
+          A calmer new tab, with a chat that follows you around. Everything -
+          wallpapers, notes, links, keys - stays on your machine.
         </p>
       </div>
 

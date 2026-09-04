@@ -7,7 +7,7 @@
 **A quiet corner of your browser.**
 
 Your own wallpapers, the links you actually use, a dock of small tools,
-and a bring-your-own-key AI chat — on the new tab, in the side panel,
+and a bring-your-own-key AI chat - on the new tab, in the side panel,
 and on any page.
 
 <p>
@@ -29,7 +29,7 @@ and on any page.
 |  |  |
 |---|---|
 | <img src="docs/screenshots/tools-dock.jpg" alt="World Clock open in the drawer, with the dock magnifying under the pointer"> | <img src="docs/screenshots/music.jpg" alt="The music drawer with a YouTube playlist queued"> |
-| **Tools in a drawer.** The dock magnifies under the pointer like the macOS one; tools and chat share a single panel. | **Music without video.** A YouTube playlist, cover art and a queue — playback survives closing the drawer. |
+| **Tools in a drawer.** The dock magnifies under the pointer like the macOS one; tools and chat share a single panel. | **Music without video.** A YouTube playlist, cover art and a queue - playback survives closing the drawer. |
 | <img src="docs/screenshots/action-menu.jpg" alt="The circular action button expanded into Ask and Music"> | <img src="docs/screenshots/settings.jpg" alt="The settings dialog over a blurred new tab"> |
 | **One button, two panels.** A circular CTA fans out into Ask and Music instead of stacking pills in the corner. | **Everything is a setting.** Glass panels tint to the wallpaper's measured luminance, not the UI theme. |
 
@@ -49,15 +49,15 @@ mode → **Load unpacked** → pick `.output/chrome-mv3`.
 
 **Firefox:** `pnpm dev:firefox` / `pnpm build:firefox`. Everything works except
 the side panel and the new-tab override, neither of which Firefox supports the
-same way — the floating chat and the tools are unaffected.
+same way - the floating chat and the tools are unaffected.
 
 ## Where it shows up
 
 | Surface | What's there |
 |---|---|
 | **New tab** | clock, greeting, search, shortcut tiles, quick-link rail, tool dock, widgets, chat |
-| **Side panel** | the same chat, docked — toolbar icon, or `⌘⇧Y` / `Ctrl+Shift+Y` |
-| **Any page** | a launcher button that opens the chat in a floating panel |
+| **Side panel** | the same chat, docked - toolbar icon, or `⌘⇧Y` / `Ctrl+Shift+Y` |
+| **Any page** | an opt-in launcher button that opens the chat in a floating panel |
 | **Options page** | all settings, also reachable from the new tab |
 
 ---
@@ -78,13 +78,13 @@ on every new tab.
 
 **Shortcut tiles.** A Chrome-style row of recently visited sites under the
 search bar, one tile per site so revisiting the same place ten times doesn't
-fill the row with it. Reading history is a heavyweight permission — the install
-prompt reads *"Read your browsing history"* — so it isn't in `permissions` at
+fill the row with it. Reading history is a heavyweight permission - the install
+prompt reads *"Read your browsing history"* - so it isn't in `permissions` at
 all: it's optional, and the row asks for it in place the first time you switch
 it on. Say no and everything else still works. Settings → Look also offers
-*most visited* (`topSites`), and 4–10 tiles.
+*most visited* (`topSites`), and 4-10 tiles.
 
-**Widgets.** iOS-style cards in two fixed shapes — small (square) and wide.
+**Widgets.** iOS-style cards in two fixed shapes - small (square) and wide.
 Drag one to move it; it snaps to one of six anchor zones. Hovering reveals
 resize and remove on the corner. *Clock* comes in analogue or digital in any of
 your world-clock zones; *Weather* is Open-Meteo (free, keyless); *Music* shows
@@ -99,8 +99,15 @@ Settings → Tools.
 button, per-surface transcripts, and a model list fetched live from whichever
 provider you picked.
 
+The on-page launcher is **off by default**. `<all_urls>` is the heaviest thing
+this extension could ask for, so the content script isn't in the manifest at
+all - it's registered at runtime by `lib/companion.ts` once you switch
+*Settings → AI → Chat on any page* on and Chrome grants the permission.
+Switching it off unregisters the script and hands the permission back. A fresh
+install is a pure new-tab replacement, and the install prompt says so.
+
 **Reminders** fire a real system notification. Type them the way you'd say them
-— `call mom in 5m`, `standup at 9am`, `gym tomorrow at 6am` — and the time is
+- `call mom in 5m`, `standup at 9am`, `gym tomorrow at 6am` - and the time is
 parsed out of the text, with a preview of what will be scheduled before you
 commit.
 
@@ -117,7 +124,7 @@ The interesting decisions, with the reasoning kept.
 
 The dock sits along the bottom by default and behaves like the macOS one: icons
 swell under the pointer with a gaussian falloff, neighbours slide out of the
-way, and the name floats above. Settings → Look mirrors what macOS exposes —
+way, and the name floats above. Settings → Look mirrors what macOS exposes -
 position (bottom / left / right), icon size, and magnification on/off plus
 amount.
 
@@ -126,7 +133,7 @@ It runs on refs and `requestAnimationFrame` rather than React state. A
 each one drops frames on exactly the interaction that has to feel liquid.
 
 Distances are measured against each icon's **base** centre, computed from its
-index rather than read back from the DOM — measuring geometry while animating
+index rather than read back from the DOM - measuring geometry while animating
 it feeds the output into the input, and the icons judder.
 
 Neighbour displacement is driven by `(1 - influence)`, so it is zero directly
@@ -147,13 +154,13 @@ otherwise occupy the same strip.
 Mesh gradients (overlapping soft radials, not a linear ramp) under a vignette
 and a 3.5% film-grain layer that kills gradient banding.
 
-Panels are real glass — blur, saturation boost, a bright inset top edge, a drop
-shadow — and the glass tint follows the **wallpaper's measured luminance**, not
+Panels are real glass - blur, saturation boost, a bright inset top edge, a drop
+shadow - and the glass tint follows the **wallpaper's measured luminance**, not
 the UI theme, so it lightens over a dark photo and darkens over a light one.
 
 Drawers and dialogs use the same treatment at a heavier blur (44px). They host
 dense UI, so legibility comes from flattening what's behind into a wash of
-colour rather than from opacity — which is what lets them stay genuinely
+colour rather than from opacity - which is what lets them stay genuinely
 transparent instead of reading as flat slabs.
 
 Everything rises into place on load, staggered, and collapses to a plain fade
@@ -170,7 +177,7 @@ the OS".
 
 Chrome sends no `Referer` header from extension pages. YouTube uses it to
 identify the embedder and answers **error 153**
-(`embedder.identity.missing.referrer`) without it. No setting fixes this —
+(`embedder.identity.missing.referrer`) without it. No setting fixes this -
 `origin`, `widget_referrer`, `referrerpolicy` and `youtube-nocookie.com` were
 all tried, and `declarativeNetRequest` cannot append `Referer`.
 
@@ -186,13 +193,13 @@ off-screen *or* merely occluded, and YouTube refuses to play at all below
 a corner, and what you see is cover art.
 
 It lives in `MusicProvider` above every surface, which is why closing the drawer
-doesn't stop the music — the drawer and the widget are only views onto a player
+doesn't stop the music - the drawer and the widget are only views onto a player
 neither owns. Because it lives on the new tab, playback stops when you navigate
 away from that tab; that's inherent to the surface.
 
 **Mixes and radio playlists can't be used.** Anything whose id starts `LR…`,
 `RD…` or `UL…` is auto-generated by YouTube from what you're watching, and
-YouTube blocks all of them from embedded players — the embed loads, fires
+YouTube blocks all of them from embedded players - the embed loads, fires
 `onReady`, then answers `onError 150` and plays nothing. Those are rejected when
 you add them, with the reason.
 
@@ -207,7 +214,7 @@ otherwise drive the transport with the wrong track.
 
 <br>
 
-Each reminder is one `chrome.alarms` alarm — the only timer that survives the
+Each reminder is one `chrome.alarms` alarm - the only timer that survives the
 MV3 service worker being torn down. A `setTimeout` in the background dies when
 the worker idles out, and one in a page dies with the tab. Alarms are re-armed
 from storage on startup and after an update, because Chrome drops them on
@@ -216,9 +223,9 @@ times are clamped rather than stored as requested.
 
 A fired reminder **also** raises an in-page alert on any open new tab and puts a
 count on the toolbar icon; dismissing either clears both. System notifications
-are not a channel an extension controls — macOS can refuse to display one with
+are not a channel an extension controls - macOS can refuse to display one with
 no error at all, Focus modes swallow them, and Chrome reports success either
-way — so they're the nice-to-have, not the mechanism.
+way - so they're the nice-to-have, not the mechanism.
 
 **If a reminder doesn't appear,** the tool tells you which half broke. One that
 reached "Reminded at …" means the alarm fired and the notification was
@@ -235,7 +242,7 @@ item. One still listed as *overdue* means the alarm itself never ran. There's a
 
 **Analogue clock hands** are rotated with SVG transforms rather than CSS
 transitions: a transition on a hand wrapping 354° → 0° animates the long way
-round, once a minute. Zones are read through `Intl` rather than `Date` getters —
+round, once a minute. Zones are read through `Intl` rather than `Date` getters -
 `getHours()` only ever answers for the machine's own zone, and a hand-rolled
 offset breaks twice a year on DST.
 
@@ -252,13 +259,13 @@ on every unrelated re-render while you were reading it.
 **JSON, Text & Dev and Notepad** override the shadcn `Textarea`'s
 `field-sizing-content` with `field-sizing-fixed`. Content sizing grows the box
 to fit its value, which is right for the chat composer and catastrophic for a
-few hundred kB of pasted JSON — the textarea becomes thousands of pixels tall
+few hundred kB of pasted JSON - the textarea becomes thousands of pixels tall
 and pushes everything below it out of the panel instead of scrolling.
 
 **Widgets snap to anchors, not x/y.** Absolute positions would need collision
 handling against the rails, the dock and the action button, and would land
 somewhere different on every window size. Each zone is a horizontal band, so a
-second widget grows along the screen edge — the rails and the dock are
+second widget grows along the screen edge - the rails and the dock are
 vertically centred, and a stacked column in any corner runs straight into them.
 
 </details>
@@ -267,7 +274,7 @@ vertically centred, and a stacked column in any corner runs straight into them.
 
 ## Bring your own key
 
-Settings → AI. Keys go in `chrome.storage.local` — **not** `sync`, because sync
+Settings → AI. Keys go in `chrome.storage.local` - **not** `sync`, because sync
 storage isn't encrypted and a key silently replicating to every machine you're
 signed into isn't a property anyone asked for. They're sent to your chosen
 provider and nowhere else.
@@ -302,14 +309,14 @@ requests go to the AI provider you configured, Open-Meteo for weather,
 track titles, and a favicon lookup per quick-link hostname.
 
 Quick-link icons are fetched **once per hostname** and then cached as blobs in
-IndexedDB, so a link never hits the network twice. Only the origin is sent —
+IndexedDB, so a link never hits the network twice. Only the origin is sent -
 never the path or query. Google's `s2/favicons` is asked first because it
 resolves per-subdomain (Gmail gets the envelope, Calendar gets the tile;
 DuckDuckGo returns one generic Google "G" for every `*.google.com`), with
 DuckDuckGo as the fallback and Chrome's own on-disk cache after that.
 
 Settings → Links turns the network lookup off entirely, falling back to Chrome's
-local favicon cache — free and offline, but it only knows sites you've already
+local favicon cache - free and offline, but it only knows sites you've already
 visited.
 
 The full policy is in [`privacy/index.html`](privacy/index.html).
@@ -322,7 +329,7 @@ The full policy is in [`privacy/index.html`](privacy/index.html).
 entrypoints/
   newtab/         the new tab page
   sidepanel/      docked chat (Chrome)
-  chat/           chat.html — the document the injected iframe points at
+  chat/           chat.html - the document the injected iframe points at
   options/        settings on its own page
   content.ts      injects only the launcher button
   background.ts   side panel behaviour, keyboard command, alarms
@@ -333,7 +340,7 @@ lib/
   settings.ts     the settings schema + sync-storage hooks
   wallpapers.ts   IndexedDB blob store, downscaling, gradients
   tools.tsx       the tool registry
-  calc.ts         expression parser (no eval — MV3's CSP forbids it)
+  calc.ts         expression parser (no eval - MV3's CSP forbids it)
 components/
   ui/             shadcn primitives
   newtab/ tools/ chat/ settings/ widgets/ music/
@@ -344,7 +351,7 @@ player/
 **Why the chat lives in an iframe.** A content script's `fetch` inherits the
 *host page's* origin, so calling an API host from one is a CORS failure no
 header can fix. `chat.html` runs on the extension origin, where the manifest's
-`host_permissions` actually apply — so the chat streams directly instead of
+`host_permissions` actually apply - so the chat streams directly instead of
 relaying every token through a service worker that idles out mid-response. The
 iframe also keeps Tailwind's reset from repainting whatever site you're on.
 
@@ -353,7 +360,7 @@ iframe also keeps Tailwind's reset from repainting whatever site you're on.
 One file under `lib/ai/providers/` implementing the `Provider` interface, plus
 one line in `lib/ai/providers/index.ts`. Nothing in the UI mentions a provider
 by name. Anything OpenAI-shaped is a single call to
-`createOpenAICompatible({...})` — that's all OpenRouter and Ollama are.
+`createOpenAICompatible({...})` - that's all OpenRouter and Ollama are.
 
 ### Adding a tool
 
@@ -371,9 +378,9 @@ components/widgets/MyWidget.tsx   +   one entry in lib/widgets.tsx
 ## Notes
 
 **On the name.** The product is **Alcove**. A handful of internal identifiers
-still read `tabby` — the two IndexedDB database names and the timer's alarm
+still read `tabby` - the two IndexedDB database names and the timer's alarm
 name. Those address data already on a user's disk, so renaming them would orphan
 every uploaded wallpaper and any scheduled timer. They stay.
 
-**Icons.** `node scripts/make-icons.mjs` regenerates `public/icon/*.png` — edit
+**Icons.** `node scripts/make-icons.mjs` regenerates `public/icon/*.png` - edit
 the two colours at the top of the script.

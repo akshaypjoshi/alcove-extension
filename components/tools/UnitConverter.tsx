@@ -89,7 +89,7 @@ export default function UnitConverter() {
 
         <div className="flex gap-2">
           <div className="bg-muted/60 flex flex-1 items-center rounded-md px-3 font-mono text-sm">
-            {result ?? "—"}
+            {result ?? "-"}
           </div>
           <Select value={to} onValueChange={setTo}>
             <SelectTrigger className="w-[46%]">

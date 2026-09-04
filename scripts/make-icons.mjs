@@ -1,6 +1,6 @@
 /**
  * Generates the extension icons. Doing it in-repo rather than committing
- * binaries keeps the design editable — change the two colours below and
+ * binaries keeps the design editable - change the two colours below and
  * re-run `node scripts/make-icons.mjs`.
  *
  * Written against zlib + a hand-rolled PNG chunk writer so the repo needs

@@ -12,13 +12,13 @@ import { cn } from "@/lib/utils";
 
 /**
  * Widgets are placed by dragging them to one of six anchor zones. The zone
- * is derived from where the pointer is — top/bottom half by left/centre/
- * right third — rather than by hit-testing the zone elements, because an
+ * is derived from where the pointer is - top/bottom half by left/centre/
+ * right third - rather than by hit-testing the zone elements, because an
  * empty zone has no size to hit-test against.
  */
 /**
  * Every zone lays out horizontally, so a second widget grows along the
- * screen edge rather than down into the furniture — the rails and the tool
+ * screen edge rather than down into the furniture - the rails and the tool
  * dock are vertically centred, so a stacked column in any corner runs
  * straight into them. Right-anchored zones reverse, keeping the first
  * widget in the corner and growing inward.
@@ -29,7 +29,7 @@ const ZONES: Record<WidgetPlacement, string> = {
   "top-right": "top-5 right-5 flex-row-reverse items-start",
   "bottom-left": "bottom-5 left-5 flex-row items-end",
   // Lifted by --dock-clearance, which App sets when the dock is at
-  // the bottom — the only zone the dock can actually collide with.
+  // the bottom - the only zone the dock can actually collide with.
   "bottom-center":
     "bottom-[calc(1.25rem+var(--dock-clearance,0px))] left-1/2 -translate-x-1/2 flex-row items-end",
   // Lifted clear of the Ask button, which owns the very bottom-right.

@@ -3,7 +3,7 @@
  *
  * Seeded rather than calling Math.random() directly: the output is derived
  * in a useMemo, so an unseeded generator would produce different text on
- * every unrelated re-render — the passage would reshuffle itself while you
+ * every unrelated re-render - the passage would reshuffle itself while you
  * were reading it. A seed makes the same settings give the same passage
  * until you actually ask for a new one.
  */
@@ -35,7 +35,7 @@ export const LOREM_UNITS: { id: LoremUnit; label: string }[] = [
   { id: "list", label: "List items" },
 ];
 
-/** mulberry32 — small, fast, and good enough for prose. */
+/** mulberry32 - small, fast, and good enough for prose. */
 function rng(seed: number) {
   let a = seed >>> 0;
   return () => {

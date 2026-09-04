@@ -4,7 +4,7 @@
  * The whole point of this file: everything above lib/ai (the sidepanel,
  * the floating chat, the newtab quick-ask box) only ever imports from
  * here. Adding a provider means adding one file under providers/ and
- * registering it — no UI changes.
+ * registering it - no UI changes.
  */
 
 export type Role = "user" | "assistant";

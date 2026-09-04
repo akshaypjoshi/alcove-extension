@@ -20,7 +20,7 @@ import type { QuickLink } from "@/lib/settings";
 
 function LinkIcon({ link, fetchIcons }: { link: QuickLink; fetchIcons: boolean }) {
   const [failed, setFailed] = useState(false);
-  // The hook runs unconditionally — an emoji override is a render-time
+  // The hook runs unconditionally - an emoji override is a render-time
   // choice, and skipping the call for those links would break hook order
   // the moment someone clears the field.
   const src = useFavicon(link.url, fetchIcons);
@@ -158,7 +158,7 @@ export default function QuickLinks({
           <DialogHeader>
             <DialogTitle>Add a quick link</DialogTitle>
             <DialogDescription>
-              The title is optional — the hostname is used if you leave it blank.
+              The title is optional - the hostname is used if you leave it blank.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

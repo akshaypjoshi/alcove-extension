@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * The single right-hand panel surface. Chat and every tool slide into
- * this same shell, so they share width, easing, and glass treatment —
+ * this same shell, so they share width, easing, and glass treatment -
  * there's only ever one of them on screen at a time.
  *
  * Closed state translates by the drawer width *plus* its right offset;
@@ -35,7 +35,7 @@ export default function Drawer({
 }) {
   return (
     <aside
-      // `inert` keeps a closed drawer out of the tab order — without it,
+      // `inert` keeps a closed drawer out of the tab order - without it,
       // tabbing from the search box walks into an off-screen panel.
       inert={!open}
       aria-hidden={!open}

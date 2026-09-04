@@ -3,9 +3,9 @@ import { createStore, get, set } from "idb-keyval";
 /**
  * Quick-link icons, resolved in order of least-invasive-first:
  *
- *   1. An emoji the user typed — always wins.
+ *   1. An emoji the user typed - always wins.
  *   2. A blob already cached in IndexedDB.
- *   3. Chrome's own on-disk favicon cache (no network at all) — but it
+ *   3. Chrome's own on-disk favicon cache (no network at all) - but it
  *      only knows sites you've actually visited, and it answers with a
  *      generic globe rather than a 404 for the rest, so it can't be the
  *      only source or every fresh profile shows five grey globes.
@@ -17,8 +17,8 @@ import { createStore, get, set } from "idb-keyval";
  * it off.
  */
 
-// Its own database — see the note in lib/wallpapers.ts.
-// Unchanged by the rename — see the note in lib/wallpapers.ts.
+// Its own database - see the note in lib/wallpapers.ts.
+// Unchanged by the rename - see the note in lib/wallpapers.ts.
 const store = createStore("tabby-favicons", "favicons");
 
 interface CachedIcon {
@@ -47,13 +47,13 @@ export function normalizeUrl(input: string): string {
 }
 
 /**
- * Google first, and given the full origin rather than the bare hostname —
+ * Google first, and given the full origin rather than the bare hostname -
  * that's what makes mail.google.com and calendar.google.com resolve to the
  * Gmail envelope and the Calendar tile instead of a generic Google "G".
  * DuckDuckGo answers per registered domain, so every *.google.com link
  * comes back byte-identical; it's the fallback, not the first choice.
  *
- * Only the origin is ever sent — never the path or query of the page.
+ * Only the origin is ever sent - never the path or query of the page.
  * 64px so the 16px rail render stays crisp on a retina display.
  */
 function sources(origin: string, host: string): string[] {
@@ -76,7 +76,7 @@ async function fetchIcon(origin: string, host: string): Promise<Blob | null> {
       if (blob.size < 100) continue;
       return blob;
     } catch {
-      // Network refused or blocked — try the next source.
+      // Network refused or blocked - try the next source.
     }
   }
   return null;
@@ -141,7 +141,7 @@ export function faviconFor(pageUrl: string, allowRemote: boolean): Promise<strin
 
 /**
  * Chrome's local cache. Free and offline, but returns a placeholder globe
- * for anything unvisited — so it's the fallback, not the first choice.
+ * for anything unvisited - so it's the fallback, not the first choice.
  */
 export function localFaviconUrl(pageUrl: string, size = 32): string | null {
   try {

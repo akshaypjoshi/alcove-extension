@@ -36,7 +36,7 @@ const SUGGESTIONS = [
 
 /**
  * The one chat surface. It renders identically in the side panel, in the
- * injected iframe, and in the new tab's overlay — the only differences are
+ * injected iframe, and in the new tab's overlay - the only differences are
  * width and whether the header shows a settings shortcut.
  *
  * `persistKey` scopes the transcript in local storage, so the side panel
@@ -95,7 +95,7 @@ export default function ChatView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restored]);
 
-  // Persist, but not mid-stream — writing on every token would put a
+  // Persist, but not mid-stream - writing on every token would put a
   // storage round-trip in the render path.
   useEffect(() => {
     if (chat.streaming || restored === null) return;

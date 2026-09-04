@@ -10,7 +10,7 @@ import { setBadge } from "@/lib/notify";
  * System notifications are not a channel the extension controls: macOS can
  * refuse to display them with no error, Focus modes swallow them, and
  * Chrome reports success either way. This is the fallback that always
- * works — as long as a new tab is open — and it costs nothing when the
+ * works - as long as a new tab is open - and it costs nothing when the
  * real notification did show, because seeing either one dismisses both.
  */
 export default function ReminderAlert() {

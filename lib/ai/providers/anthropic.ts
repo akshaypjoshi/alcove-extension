@@ -26,7 +26,7 @@ function headers(apiKey: string): HeadersInit {
 }
 
 /**
- * Fallback only — listModels() replaces this from /v1/models on first load.
+ * Fallback only - listModels() replaces this from /v1/models on first load.
  * Note the bare ids: the Messages API takes `claude-haiku-4-5`, not a
  * date-suffixed snapshot, and a stale suffix here is a 404 at send time.
  */

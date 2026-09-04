@@ -26,7 +26,7 @@ function partsInZone(date: Date, timeZone?: string) {
 
 /**
  * Split "4:49 pm" into digits and meridiem. At card sizes the joined
- * string is what pushed the small variant onto two lines — and setting the
+ * string is what pushed the small variant onto two lines - and setting the
  * meridiem at full size is the same dated look the hero clock avoids.
  */
 function splitTime(

@@ -46,8 +46,8 @@ export interface WallpaperSettings {
 }
 
 /**
- * Widget sizes follow the iOS convention — a square unit and a double-wide
- * one — rather than free resizing. Two fixed shapes are what let a row of
+ * Widget sizes follow the iOS convention - a square unit and a double-wide
+ * one - rather than free resizing. Two fixed shapes are what let a row of
  * unrelated widgets line up instead of looking like floating boxes.
  */
 export type WidgetSize = "sm" | "md";
@@ -84,7 +84,7 @@ export interface WidgetInstance {
   placement: WidgetPlacement;
   /**
    * Per-instance choices declared by the widget itself (see `options` in
-   * lib/widgets.tsx) — the clock's analogue/digital style and time zone,
+   * lib/widgets.tsx) - the clock's analogue/digital style and time zone,
    * for instance. Kept as loose strings so the registry owns the meaning
    * and settings can render the controls generically.
    */
@@ -157,7 +157,7 @@ export const SEARCH_ENGINES: Record<
   { label: string; url: string; menuLabel?: string }
 > = {
   // Handed to browser.search rather than navigated to, so the request is
-  // the one the address bar would have made — see lib/search.ts. The url
+  // the one the address bar would have made - see lib/search.ts. The url
   // is only the fallback for a browser without the API.
   browser: {
     label: "the web",
@@ -295,7 +295,7 @@ export function useSettings() {
 
   /**
    * Patch-style update. Writes straight to storage and lets the watcher
-   * push the new value back into state — one source of truth, and every
+   * push the new value back into state - one source of truth, and every
    * open tab updates at the same time.
    */
   const update = useCallback(async (patch: Partial<Settings>) => {

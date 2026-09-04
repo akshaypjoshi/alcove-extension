@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 /**
  * The shortcut row under the search bar.
  *
- * Reading history is a heavyweight permission — the install prompt says
- * "Read your browsing history" — so it isn't in `permissions`. It's
+ * Reading history is a heavyweight permission - the install prompt says
+ * "Read your browsing history" - so it isn't in `permissions`. It's
  * optional and requested the moment you switch the row on, which also
  * keeps it off the list a store reviewer has to be convinced about for
  * everyone who never turns it on.
@@ -54,7 +54,10 @@ function isUsable(url: string): boolean {
  * separator and fall back to the bare domain.
  */
 function shortLabel(title: string | undefined, host: string): string {
-  const head = (title ?? "").split(/\s+[|–—·:-]\s+/)[0].trim();
+  // Escaped rather than literal: these match the separators *other sites*
+  // put in their titles, so the em and en dash have to stay even though we
+  // don't write them ourselves.
+  const head = (title ?? "").split(/\s+[|\u2014\u2013\u00b7:-]\s+/)[0].trim();
   if (head && head.length <= 18) return head;
 
   const bare = host.replace(/^www\./, "").split(".")[0];

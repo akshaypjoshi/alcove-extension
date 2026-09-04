@@ -4,8 +4,8 @@
  *
  * `window.location.href = "https://www.google.com/search?q=…"` from a
  * chrome-extension:// document produces a cross-site navigation with *no
- * Referer at all* — extension origins are stripped, the same reason
- * YouTube rejects our player frame with error 153 — and none of the client
+ * Referer at all* - extension origins are stripped, the same reason
+ * YouTube rejects our player frame with error 153 - and none of the client
  * parameters a real omnibox search carries. That combination reads as
  * automated traffic, and Google answers it with the "unusual traffic"
  * captcha instead of results.
@@ -32,7 +32,7 @@ export function hasBrowserSearch(): boolean {
 
 /**
  * Anything that looks like a host goes straight there instead of through
- * the search engine — typing "localhost:3000" or "news.ycombinator.com"
+ * the search engine - typing "localhost:3000" or "news.ycombinator.com"
  * and getting a results page is the single most annoying new-tab bug.
  */
 export function looksLikeUrl(input: string): boolean {

@@ -1,7 +1,7 @@
 /**
  * YouTube plays *in* our panel: an embedded iframe we drive by postMessage,
  * which is the only way to control it without loading YouTube's remote
- * iframe-api script — MV3 forbids remote code, and the Chrome Web Store
+ * iframe-api script - MV3 forbids remote code, and the Chrome Web Store
  * rejects it.
  *
  * Kept as a named union of one. Playlists already on disk carry a

@@ -16,6 +16,18 @@ export default defineContentScript({
   matches: ["<all_urls>"],
   runAt: "document_idle",
 
+  /**
+   * Registered at runtime rather than declared in the manifest.
+   *
+   * A manifest-declared <all_urls> script is granted at install, shows
+   * "Read and change all your data on every website" in the install
+   * prompt, and reads to a store reviewer as a second purpose bolted onto
+   * a new tab page. Registered at runtime, the default install is a pure
+   * new-tab replacement and this asks for the host permission only when
+   * someone switches the feature on. See lib/companion.ts.
+   */
+  registration: "runtime",
+
   main() {
     // Skip iframes; otherwise an ad frame gets its own launcher.
     if (window.top !== window) return;
@@ -74,7 +86,7 @@ export default defineContentScript({
     button.addEventListener("click", () => toggle());
 
     // Close requests come from the X inside the iframe. Only trust messages
-    // whose source is that exact frame — any page can postMessage at us.
+    // whose source is that exact frame - any page can postMessage at us.
     window.addEventListener("message", (event) => {
       if (event.source !== frame.contentWindow) return;
       if (event.data?.type === "tabby:close") toggle(false);

@@ -55,7 +55,7 @@ export default function JsonTool() {
       };
     } catch (err) {
       // V8's message already carries the position and, on newer versions,
-      // the line and column — more useful than anything we'd re-derive.
+      // the line and column - more useful than anything we'd re-derive.
       return { output: "", error: err instanceof Error ? err.message : "Invalid JSON" };
     }
   }, [input, indent, sorted]);
@@ -83,7 +83,7 @@ export default function JsonTool() {
 
       {/*
         field-sizing-fixed is doing real work here. The shadcn Textarea sets
-        field-sizing-content, so the box grows to fit its value — paste a
+        field-sizing-content, so the box grows to fit its value - paste a
         few hundred kB of JSON and it becomes thousands of pixels tall,
         pushing the output pane and the stats line out of the drawer
         entirely instead of scrolling. Fixed sizing makes it scroll inside

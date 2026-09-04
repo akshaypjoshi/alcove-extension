@@ -3,7 +3,7 @@ import { faviconFor, hostOf, localFaviconUrl } from "@/lib/favicon";
 
 /**
  * Returns a src for the link's icon, or null once every source is spent.
- * Resolves asynchronously, so callers render initials until it lands —
+ * Resolves asynchronously, so callers render initials until it lands -
  * there's no layout shift, both are the same box.
  */
 export function useFavicon(pageUrl: string, allowRemote: boolean): string | null {

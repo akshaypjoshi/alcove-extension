@@ -172,7 +172,7 @@ export default function TextTools() {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         spellCheck={false}
-        placeholder={mode === "uuid" ? "Not needed — just hit generate" : "Paste input…"}
+        placeholder={mode === "uuid" ? "Not needed - just hit generate" : "Paste input…"}
         className="field-sizing-fixed h-32 shrink-0 resize-y overflow-auto font-mono text-xs"
       />
 

@@ -78,7 +78,7 @@ export async function permissionLevel(): Promise<"granted" | "denied" | "unknown
     const getLevel = (browser.notifications as any)?.getPermissionLevel;
     if (typeof getLevel !== "function") return "unknown";
     const level = await new Promise<string>((resolve) => {
-      // Callback on Chrome, promise on Firefox — accept whichever answers.
+      // Callback on Chrome, promise on Firefox - accept whichever answers.
       const maybe = getLevel.call(browser.notifications, resolve);
       if (maybe && typeof maybe.then === "function") maybe.then(resolve, () => resolve(""));
     });
@@ -90,7 +90,7 @@ export async function permissionLevel(): Promise<"granted" | "denied" | "unknown
 
 /**
  * A toolbar badge as a second channel. If the OS is swallowing Chrome's
- * notifications — Focus mode, or notifications turned off for Chrome —
+ * notifications - Focus mode, or notifications turned off for Chrome -
  * this is the only signal the user still gets.
  */
 export async function setBadge(count: number) {

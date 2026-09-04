@@ -1,7 +1,7 @@
 /**
  * Every unit is expressed as a factor to its category's base unit, so a
  * conversion is one multiply and one divide. Temperature is the exception
- * — it's affine, not linear — so it carries explicit to/from functions.
+ * - it's affine, not linear - so it carries explicit to/from functions.
  */
 
 export interface Unit {

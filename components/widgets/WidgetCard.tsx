@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * The frame every widget renders into. Deliberately provides no header or
- * chrome of its own — iOS widgets don't have one, and a title bar on a
+ * chrome of its own - iOS widgets don't have one, and a title bar on a
  * 168px card spends a fifth of its height saying what the content already
  * says. Widgets own their whole surface.
  */
@@ -33,7 +33,7 @@ export default function WidgetCard({
       style={style}
       className={cn(
         // text-left is explicit: <main> sets text-center for the centred
-        // hero layout, and widgets are its descendants — without this the
+        // hero layout, and widgets are its descendants - without this the
         // whole card inherits centring and every label drifts.
         "glass text-on-wallpaper rise flex shrink-0 flex-col overflow-hidden rounded-3xl p-4 text-left",
         WIDGET_DIMENSIONS[size],

@@ -4,7 +4,7 @@
  * YouTube refuses to play inside an extension page: Chrome sends no
  * Referer header from one, YouTube uses that header to identify the
  * embedder, and the player answers error 153 and plays nothing. An
- * ordinary web page does send it — so Alcove frames that page, and the
+ * ordinary web page does send it - so Alcove frames that page, and the
  * page frames YouTube.
  *
  * ── This is the one line to change. ──

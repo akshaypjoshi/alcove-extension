@@ -20,7 +20,7 @@ import { IDLE, type MusicController, type PlaybackState, type Playlist } from ".
  * Chrome sends no Referer header from an extension page, YouTube uses it
  * to identify the embedder, and the player answers error 153 and plays
  * nothing. So the extension frames an ordinary web page the user hosts
- * (player/player.html), and that page frames YouTube — an ordinary page
+ * (player/player.html), and that page frames YouTube - an ordinary page
  * does send the header.
  *
  * Keeping the state here rather than in the drawer is what lets the drawer
@@ -101,6 +101,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [titles, setTitles] = useState<Record<string, QueueItem>>({});
   const [error, setError] = useState<string | null>(null);
   const shuffleRef = useRef(false);
+  /** Set once the relay page has said anything at all. */
+  const relayAliveRef = useRef(false);
 
 
   const playerUrl = PLAYER_URL.trim();
@@ -198,6 +200,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       if (event.source !== frameRef.current?.contentWindow) return;
 
       const message = event.data;
+      if (message?.__alcove) relayAliveRef.current = true;
       if (message?.__alcove === "error") {
         setError(YOUTUBE_ERRORS[message.payload] ?? `Playback error (${message.payload}).`);
         return;
@@ -227,6 +230,26 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [playerOrigin]);
+
+  /**
+   * A cross-origin iframe reports no load error we can read, so a relay
+   * page that 404s, gets taken down, or has its deployment lapse looks
+   * exactly like one that is simply quiet. Without this the transport sits
+   * there doing nothing and never says why.
+   */
+  useEffect(() => {
+    if (!playerSrc) return;
+    relayAliveRef.current = false;
+
+    const id = setTimeout(() => {
+      if (relayAliveRef.current) return;
+      setError(
+        "The player page isn't responding. Check that PLAYER_URL in lib/music/config.ts is still hosted and reachable.",
+      );
+    }, 8000);
+
+    return () => clearTimeout(id);
+  }, [playerSrc]);
 
   const controller: MusicController | null = useMemo(() => {
     if (!selected) return null;
@@ -288,8 +311,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
 
       {/*
         A few pixels in a corner. It must exist and be technically visible
-        — Chrome won't start media in a frame that's off-screen, occluded
-        or display:none, all of which I measured — but nothing says it has
+        - Chrome won't start media in a frame that's off-screen, occluded
+        or display:none, all of which I measured - but nothing says it has
         to be big. Laid out at 400x225 because YouTube won't play smaller,
         then scaled down. What you see everywhere else is cover art.
       */}

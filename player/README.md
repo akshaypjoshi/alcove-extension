@@ -7,7 +7,7 @@ One static file. Alcove frames this page, and this page frames YouTube.
 Chrome sends no `Referer` header from extension pages. YouTube uses that
 header to identify who is embedding it, and without it the player answers
 **error 153** (`embedder.identity.missing.referrer`) and plays nothing. No
-setting inside the extension can add that header — `declarativeNetRequest`
+setting inside the extension can add that header - `declarativeNetRequest`
 cannot append `Referer`.
 
 An ordinary web page does send it. So the extension frames this page instead

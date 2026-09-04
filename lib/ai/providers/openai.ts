@@ -13,7 +13,7 @@ const DEFAULT_BASE = "https://api.openai.com/v1";
 /**
  * Built as a factory rather than a singleton, because the same wire format
  * covers OpenRouter, Groq, Together, and a local Ollama or LM Studio server.
- * One adapter, several entries in the registry — good value for a hobby repo.
+ * One adapter, several entries in the registry - good value for a hobby repo.
  */
 export function createOpenAICompatible(opts: {
   id: string;

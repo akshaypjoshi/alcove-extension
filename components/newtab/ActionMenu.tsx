@@ -14,7 +14,7 @@ const ACTIONS: { id: ActionId; label: string; icon: LucideIcon }[] = [
  * One circular trigger that fans its options out above it.
  *
  * The options are always mounted and animated by class rather than
- * conditionally rendered — unmounting them would give an opening
+ * conditionally rendered - unmounting them would give an opening
  * animation and no closing one, which reads as a glitch. They're
  * pointer-events-none while closed so they can't be clicked through.
  *

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  * interaction that has to feel liquid.
  *
  * Distances are measured against each icon's *base* centre, computed
- * analytically from the index rather than read back from the DOM —
+ * analytically from the index rather than read back from the DOM -
  * measuring live geometry while that geometry is being animated feeds the
  * output back into the input and the icons judder.
  */
@@ -75,7 +75,7 @@ export default function ToolDock({
       const centre = start + i * (base + GAP) + base / 2;
       const distance = pointer === null ? Infinity : Math.abs(pointer - centre);
 
-      // Gaussian falloff — a linear one has a visible crease at the edge
+      // Gaussian falloff - a linear one has a visible crease at the edge
       // of its range, which reads as a glitch rather than as physics.
       const influence =
         pointer === null || !dock.magnify ? 0 : Math.exp(-((distance / reach) ** 2) * 2.2);
@@ -90,7 +90,7 @@ export default function ToolDock({
        * under the pointer must not move at all, or it slides out from
        * under the cursor as you approach and becomes unclickable, leaving
        * a hole where the pointer is. So the displacement is zero at the
-       * cursor and grows to a constant further out — the half-width that
+       * cursor and grows to a constant further out - the half-width that
        * the magnified icon actually needs to borrow from its neighbours.
        */
       const push =
@@ -242,7 +242,7 @@ export default function ToolDock({
           ))}
         </ul>
 
-        {/* One shared label rather than a tooltip per icon — it has to
+        {/* One shared label rather than a tooltip per icon - it has to
             track the pointer at frame rate, which a delayed tooltip can't. */}
         <div
           ref={labelRef}

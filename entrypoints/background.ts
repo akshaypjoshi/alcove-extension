@@ -1,6 +1,7 @@
 import { ALARM_NAME, timerStore } from "@/lib/timer";
 import { ALARM_PREFIX, remindersStore, syncAlarms } from "@/lib/reminders";
 import { notify, setBadge } from "@/lib/notify";
+import { syncCompanion } from "@/lib/companion";
 
 export default defineBackground(() => {
   /**
@@ -9,7 +10,7 @@ export default defineBackground(() => {
    */
 
   // Clicking the toolbar icon opens the side panel. Chrome-only API, and
-  // it has to be registered at top level — inside an onInstalled callback
+  // it has to be registered at top level - inside an onInstalled callback
   // it silently never applies after the worker restarts.
   browser.sidePanel
     ?.setPanelBehavior({ openPanelOnActionClick: true })
@@ -75,11 +76,20 @@ export default defineBackground(() => {
     // Chrome drops an extension's alarms on reload/update, so pending
     // reminders have to be re-armed from storage.
     syncAlarms();
+    // The on-page launcher is registered at runtime, so it has to be put
+    // back after an update - and taken down if the user revoked
+    // <all_urls> from Chrome's own permissions UI.
+    syncCompanion();
   });
 
   browser.runtime.onStartup.addListener(() => {
     syncAlarms();
+    syncCompanion();
   });
+
+  // Revoking the host permission in Chrome's UI never reaches the toggle
+  // otherwise, leaving settings claiming a feature that isn't running.
+  browser.permissions.onRemoved?.addListener(() => syncCompanion());
 
   // Clicking a reminder notification just dismisses it.
   browser.notifications.onClicked.addListener((id) => {

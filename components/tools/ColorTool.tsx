@@ -71,7 +71,7 @@ export default function ColorTool() {
   const rgb = useMemo(() => hexToRgb(hex) ?? ([99, 102, 241] as [number, number, number]), [hex]);
   const [h, s, l] = rgbToHsl(...rgb);
 
-  // Tints toward white and shades toward black — the palette you actually
+  // Tints toward white and shades toward black - the palette you actually
   // want when picking a hover/active variant of a brand color.
   const ramp = useMemo(
     () =>

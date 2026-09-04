@@ -8,7 +8,7 @@ export interface SSEMessage {
 /**
  * Minimal but correct SSE reader.
  *
- * The naive version of this — split each chunk on "\n" and parse — works
+ * The naive version of this - split each chunk on "\n" and parse - works
  * in dev and then breaks in the wild, because a network chunk can end
  * mid-line or even mid-UTF-8-character. So: buffer across chunks, decode
  * with { stream: true }, and dispatch only on a blank line.

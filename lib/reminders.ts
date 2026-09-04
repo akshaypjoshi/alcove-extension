@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 /**
  * Reminders are one `chrome.alarms` alarm each, named `reminder:<id>`.
  * Alarms are the only timer that survives the MV3 service worker being
- * torn down — a setTimeout in the background dies within seconds of the
+ * torn down - a setTimeout in the background dies within seconds of the
  * worker idling out, and one in a page dies when the tab closes.
  */
 
@@ -41,7 +41,7 @@ const UNITS: Record<string, number> = {
 
 const UNIT_PATTERN = Object.keys(UNITS).sort((a, b) => b.length - a.length).join("|");
 
-/** "in 5m", "5 minutes", "1h 30m" — anchored to the end of the string. */
+/** "in 5m", "5 minutes", "1h 30m" - anchored to the end of the string. */
 const RELATIVE = new RegExp(
   `(?:^|\\s)(?:in\\s+)?(\\d+)\\s*(${UNIT_PATTERN})(?:\\s*(\\d+)\\s*(${UNIT_PATTERN}))?\\s*$`,
   "i",
@@ -49,7 +49,7 @@ const RELATIVE = new RegExp(
 
 /**
  * "at 6pm", "at 18:30", "6:30 pm". Requires an `at`, a colon, or a
- * meridiem — without one of those, "call mom 5" would read the 5 as a
+ * meridiem - without one of those, "call mom 5" would read the 5 as a
  * time and silently schedule something for five o'clock.
  */
 const ABSOLUTE = /(?:^|\s)(?:(at)\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*$/i;
@@ -94,7 +94,7 @@ export function parseReminder(input: string, now = new Date()): ParsedReminder |
 
     const due = new Date(now);
     due.setHours(hour, minute, 0, 0);
-    // A time that has already passed today means tomorrow — nobody sets a
+    // A time that has already passed today means tomorrow - nobody sets a
     // reminder for the past.
     if (tomorrow || due.getTime() <= now.getTime()) {
       due.setDate(due.getDate() + 1);
@@ -108,7 +108,7 @@ export function parseReminder(input: string, now = new Date()): ParsedReminder |
 
 /**
  * Chrome won't fire an alarm sooner than ~30s out, so anything nearer is
- * clamped rather than stored as requested — otherwise the list would show
+ * clamped rather than stored as requested - otherwise the list would show
  * a time that has already passed while the notification is still pending.
  */
 const MIN_LEAD_MS = 30_000;

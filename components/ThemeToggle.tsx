@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 /**
  * One button that cycles system → light → dark → system, rather than a
  * two-state switch. A plain light/dark toggle has to throw away "follow
- * the OS", which is the setting most people actually want — and this is
+ * the OS", which is the setting most people actually want - and this is
  * still one click, with the icon naming the current state.
  */
 const NEXT: Record<ThemeMode, ThemeMode> = {

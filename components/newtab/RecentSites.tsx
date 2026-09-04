@@ -40,7 +40,7 @@ function Tile({ site, fetchIcons }: { site: RecentSite; fetchIcons: boolean }) {
  * Chrome-style shortcut tiles under the search bar.
  *
  * Reading history needs a permission the extension doesn't hold by
- * default, so the row asks for it in place — the request has to come from
+ * default, so the row asks for it in place - the request has to come from
  * a click, and doing it here means the rest of the new tab works for
  * anyone who says no.
  */

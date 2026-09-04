@@ -13,7 +13,7 @@ const GRAIN =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E";
 
 /**
- * Sits behind everything at z-0 — deliberately not a negative z-index.
+ * Sits behind everything at z-0 - deliberately not a negative z-index.
  * A negative one paints in step 2 of the stacking order, before in-flow
  * descendants' backgrounds in step 3, so `body`'s own opaque background
  * covers it and no wallpaper is ever visible. z-0 puts this in step 6,
@@ -21,7 +21,7 @@ const GRAIN =
  *
  * The image is a plain <div> background
  * rather than an <img>, so `blur` and `scale` can be applied without the
- * blur sampling transparent pixels at the edges (hence the 1.06 scale —
+ * blur sampling transparent pixels at the edges (hence the 1.06 scale -
  * it hides the soft border a large blur radius would otherwise expose).
  */
 export default function WallpaperLayer({ wallpaper }: { wallpaper: WallpaperSettings }) {

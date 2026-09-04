@@ -1,7 +1,7 @@
 import { storage } from "#imports";
 
 /**
- * Rates come from open.er-api.com — no key, no signup, and it publishes a
+ * Rates come from open.er-api.com - no key, no signup, and it publishes a
  * `time_next_update_unix` so we don't have to guess a TTL. Results are
  * cached in local storage: the feed updates once a day, and a new tab
  * should never wait on the network to render.
@@ -48,7 +48,7 @@ export async function getRates(force = false): Promise<RateCache> {
     await cacheStore.setValue(value);
     return value;
   } catch (err) {
-    // Stale rates beat no rates for a hobby converter — surface the age
+    // Stale rates beat no rates for a hobby converter - surface the age
     // in the UI instead of erroring out.
     if (cached) return cached;
     throw err;

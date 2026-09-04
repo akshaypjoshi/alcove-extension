@@ -12,7 +12,7 @@ import type { WallpaperSettings } from "./settings";
 /**
  * NOTE: one database per store, deliberately. idb-keyval's createStore()
  * opens the database at version 1 and creates only its own object store in
- * onupgradeneeded — so two createStore() calls sharing a database name is a
+ * onupgradeneeded - so two createStore() calls sharing a database name is a
  * trap: whichever runs first creates the database, onupgradeneeded never
  * fires for the second, and every transaction against it throws
  * "One of the specified object stores was not found".
@@ -46,7 +46,7 @@ export interface Gradient {
 
 /** Built-ins, so a fresh install looks intentional before any upload. */
 /**
- * Mesh gradients — several soft radial blobs over a base colour — rather
+ * Mesh gradients - several soft radial blobs over a base colour - rather
  * than a three-stop linear ramp. A linear gradient reads as "a CSS
  * default"; overlapping radials read as light in a room, and they hold up
  * at any aspect ratio because every stop is placed in percentages.
@@ -141,7 +141,7 @@ const THUMB_EDGE = 360;
 
 /**
  * Mean relative luminance of what's on the canvas. Sampled every 4th pixel
- * — an average doesn't need every one, and this runs on the main thread
+ * - an average doesn't need every one, and this runs on the main thread
  * while the user waits for the upload.
  */
 function meanLuminance(
@@ -174,7 +174,7 @@ async function encode(
   if (!ctx) throw new Error("Canvas 2D unavailable");
   ctx.drawImage(bitmap, 0, 0, width, height);
 
-  // Measured before encoding, and only on the thumbnail — getImageData on
+  // Measured before encoding, and only on the thumbnail - getImageData on
   // a 2560px canvas would pull ~26MB for a number we round anyway.
   const luminance = measure ? meanLuminance(ctx, width, height) : 0.35;
 
@@ -245,7 +245,7 @@ export function colorLuminance(hex: string): number {
 }
 
 /**
- * How bright the wallpaper actually reads, dim scrim included — so pushing
+ * How bright the wallpaper actually reads, dim scrim included - so pushing
  * the dim slider up on a bright photo flips the clock to white on its own,
  * which is exactly when you'd want it to.
  */

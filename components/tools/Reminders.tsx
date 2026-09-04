@@ -99,7 +99,7 @@ export default function Reminders() {
                 {formatDue(parsed.dueAt)} ({formatRelative(parsed.dueAt - now)})
               </>
             ) : (
-              "No time found — will remind you in 10 minutes"
+              "No time found - will remind you in 10 minutes"
             )
           ) : (
             'Try "call mom in 5m", "standup at 9am", "gym tomorrow at 6am"'
@@ -134,10 +134,10 @@ export default function Reminders() {
               <div className="text-muted-foreground text-xs">
                 {formatDue(reminder.dueAt)} ·{" "}
                 {/* More than a minute past due with no firedAt means the
-                    alarm itself never ran — worth saying out loud, since it
+                    alarm itself never ran - worth saying out loud, since it
                     looks identical to a notification that was suppressed. */}
                 {reminder.dueAt < now - 60_000 ? (
-                  <span className="text-amber-500">overdue — alarm hasn't fired</span>
+                  <span className="text-amber-500">overdue - alarm hasn't fired</span>
                 ) : (
                   formatRelative(reminder.dueAt - now)
                 )}
@@ -199,7 +199,7 @@ export default function Reminders() {
                 setTestResult(
                   result.ok
                     ? // Chrome accepted it, so anything still missing was
-                      // dropped below Chrome — which Chrome cannot report.
+                      // dropped below Chrome - which Chrome cannot report.
                       IS_MAC
                       ? "Chrome accepted it. If nothing appeared, macOS is blocking Chrome: System Settings → Notifications → Google Chrome → Allow notifications, and check Focus isn't on."
                       : "Chrome accepted it. If nothing appeared, your OS notification settings are blocking Chrome."

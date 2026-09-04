@@ -20,7 +20,7 @@ export interface WidgetProps {
 /**
  * A per-instance choice the settings panel renders as a select. `choices`
  * takes the current settings so a widget can offer options that depend on
- * them — the clock lists the World Clock cities the user already added,
+ * them - the clock lists the World Clock cities the user already added,
  * rather than a second copy of the whole IANA database.
  */
 export interface WidgetOption {

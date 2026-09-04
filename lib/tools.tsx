@@ -30,7 +30,7 @@ import WorldClock from "@/components/tools/WorldClock";
 
 /**
  * One registry, consumed by both the dock and the settings panel. Adding a
- * tool is one entry here plus one component — nothing else needs editing.
+ * tool is one entry here plus one component - nothing else needs editing.
  */
 export interface ToolDef {
   id: string;

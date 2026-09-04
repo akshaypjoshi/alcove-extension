@@ -1,0 +1,90 @@
+================================================================
+CATEGORY
+================================================================
+
+Functionality & UI
+
+Alcove's primary job is replacing and customising the new tab page,
+which is what that category is for, and it's where new-tab
+extensions are found. It also matches the single-purpose statement
+you'll give on the Privacy tab - a reviewer reading "replaces the
+new tab page" filed under "Workflow & Planning" may reasonably ask
+why a planning tool needs a new tab override.
+
+Language: English
+
+
+================================================================
+DESCRIPTION  (paste into Description*)
+================================================================
+
+Alcove replaces the new tab page with something calmer and actually yours: your own wallpaper, the links you use, a set of small tools, and an AI chat that opens when you want it.
+
+YOUR OWN WALLPAPERS
+
+Upload your photos, or pick a built-in gradient. Blur and dim sliders keep text readable over a busy image, and shuffle rotates through your library on every new tab.
+
+A CLOCK AND A SEARCH BAR THAT STAY OUT OF THE WAY
+
+Search runs through your browser's own default engine, so results come back exactly as they would from the address bar.
+
+SHORTCUT TILES
+
+A row of the sites you keep going back to, under the search bar. One tile per site, so revisiting the same place ten times doesn't fill the row with it. Off by default, and it asks permission the first time you turn it on.
+
+WIDGETS
+
+Cards in the style of the ones on your phone, showing the weather, a clock in whatever time zone you need, or what's playing. Drag them to any of six anchor points, in square or wide.
+
+A DOCK OF SMALL TOOLS
+
+The everyday sort: calculators and converters, clocks and timers, reminders and notes. There are a few odds and ends for developers too. Each opens in a side drawer instead of a cramped popup, and you can switch off whatever you don't use. The dock magnifies under your pointer, and can sit along the bottom, the left or the right.
+
+REMINDERS THAT ACTUALLY REACH YOU
+
+Type them the way you'd say them, like "call mom in 5m", and Alcove works out the time and shows you what it is about to schedule before you commit. Each one fires a system notification, and also appears on your new tab and as a count on the toolbar icon, so a Focus mode swallowing the notification doesn't mean you miss it.
+
+MUSIC
+
+Add a YouTube playlist and drive it from the new tab, with cover art and the full queue. No video, and it keeps playing when you close the panel.
+
+AI CHAT WITH YOUR OWN KEY
+
+Bring a key from the provider you already use and pick a model. Replies stream in, you can stop one mid-answer, and the new tab and the side panel keep separate conversations. A local model server works too. Optionally, a launcher button on other sites.
+
+LIGHT AND DARK
+
+Follows your system by default, or pick one. Panels are translucent, and their tint follows the wallpaper rather than the theme, so they stay readable over a bright photo and over a dark one.
+
+PRIVACY
+
+Alcove has no server and no account. There is no analytics, no telemetry, and no backend belonging to the developer, so there is nowhere for your data to be sent and none of it is collected.
+
+Your API key lives in local extension storage on your device and is deliberately kept out of browser sync. It goes to the provider you picked and nowhere else. Wallpapers and chat transcripts never leave your machine.
+
+Alcove asks for as little as it can up front. Reading your browsing history for the shortcut tiles is optional and requested only when you turn that row on. The chat launcher for other websites is off by default, and the access it needs is requested when you switch it on and handed back when you switch it off. A fresh install touches nothing but your new tab.
+
+Weather comes from Open-Meteo, which needs no account. Site icons are fetched once per site and then cached, and that can be turned off entirely.
+
+Full privacy policy: https://player-html-ashy.vercel.app/privacy.html
+
+
+================================================================
+TITLE AND SUMMARY  (done - re-upload to pick them up)
+================================================================
+
+Both come from the package, so they changed in wxt.config.ts and
+need the new zip uploaded:
+
+  Title    Alcove - Custom New Tab
+  Summary  A calmer new tab page: your own wallpaper, the links you
+           actually use, and small tools that open when you need
+           them.
+
+The summary was rewritten as a sentence rather than a feature list
+for the same reason the description was: the store indexes and
+polices both, and the first version named five things in a row.
+
+A short_name of "Alcove" was added alongside, so Chrome's own UI -
+the toolbar tooltip and the extensions list - still shows the plain
+brand rather than the longer store title.

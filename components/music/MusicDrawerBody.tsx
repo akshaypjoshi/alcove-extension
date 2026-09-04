@@ -28,7 +28,7 @@ import { useMusic } from "@/lib/music/context";
 import { cn } from "@/lib/utils";
 
 /**
- * A view onto the player, not the player itself — closing this unmounts
+ * A view onto the player, not the player itself - closing this unmounts
  * nothing that makes sound.
  *
  * No video: the frame is parked off-screen by MusicProvider, and what
@@ -241,7 +241,7 @@ export default function MusicDrawerBody() {
           {/*
             Vertical, and only while you're pointing at it. A horizontal
             slider needed its own full-width row; this costs one slot in a
-            row that already exists. Click still mutes — the slider is the
+            row that already exists. Click still mutes - the slider is the
             hover affordance, which is how every desktop volume control
             behaves.
           */}
@@ -270,7 +270,7 @@ export default function MusicDrawerBody() {
             {volumeOpen && controller && (
               /*
                 The gap between button and popup was made with a margin,
-                which left a strip where the pointer was over neither —
+                which left a strip where the pointer was over neither -
                 pointerleave fired and the popup vanished before you could
                 reach it. Padding on the wrapper makes the same visual gap
                 part of the hover area, so the two are contiguous.

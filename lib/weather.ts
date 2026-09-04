@@ -2,7 +2,7 @@ import { storage } from "#imports";
 
 /**
  * Open-Meteo: free, no key, no attribution requirement, and it exposes a
- * geocoder on the same terms — which is what makes a hobby extension able
+ * geocoder on the same terms - which is what makes a hobby extension able
  * to ship weather without asking anyone for a token.
  */
 
@@ -11,7 +11,7 @@ const GEOCODE = "https://geocoding-api.open-meteo.com/v1/search";
 
 export interface WeatherLocation {
   name: string;
-  /** Region/state, when the geocoder gives one — "Pune, Maharashtra". */
+  /** Region/state, when the geocoder gives one - "Pune, Maharashtra". */
   admin?: string;
   country: string;
   latitude: number;
@@ -71,7 +71,7 @@ export function describe(code: number): { icon: string; label: string } {
   for (const [codes, icon, label] of CONDITIONS) {
     if (codes.includes(code)) return { icon, label };
   }
-  return { icon: "cloudy", label: "—" };
+  return { icon: "cloudy", label: "-" };
 }
 
 export async function searchLocations(

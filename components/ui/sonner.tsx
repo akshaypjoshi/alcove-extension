@@ -2,7 +2,7 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 /**
  * The stock shadcn wrapper pulls the theme from next-themes. There is no
- * Next.js here — lib/theme.ts toggles `.dark` on <html>, so read that.
+ * Next.js here - lib/theme.ts toggles `.dark` on <html>, so read that.
  */
 const Toaster = ({ ...props }: ToasterProps) => {
   const theme = document.documentElement.classList.contains("dark")

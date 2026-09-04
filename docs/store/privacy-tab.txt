@@ -1,0 +1,152 @@
+================================================================
+CHECK THIS FIRST - the uploaded package may be stale
+================================================================
+
+Chrome's error list asks you to justify: alarms, favicon, history,
+host permissions, notifications, remote code, search, sidePanel,
+storage, topSites, unlimitedStorage.
+
+It does NOT ask about "scripting" - and your current build declares
+it. That suggests the package in the dashboard predates the
+single-purpose fix, i.e. it still contains the <all_urls> content
+script that was the main rejection risk.
+
+Open the Package tab and check the permission list. If "scripting"
+is absent, re-upload .output/alcove-0.1.0-chrome.zip before filling
+anything below in. That build has:
+
+  permissions      storage, unlimitedStorage, alarms, notifications,
+                   search, scripting, sidePanel, favicon
+  content_scripts  none
+  optional hosts   <all_urls>, http://localhost/*
+
+
+================================================================
+SINGLE PURPOSE
+================================================================
+
+Alcove replaces Chrome's new tab page with a customisable start page: a wallpaper, a clock, a search box, shortcut tiles, widgets, and a set of small utilities, plus an AI chat panel the user opens themselves.
+
+
+================================================================
+PERMISSION JUSTIFICATIONS  (one field each)
+================================================================
+
+storage
+Stores the user's own settings - layout, theme, wallpaper choice, quick links, widget placement, and which tools are enabled - so their new tab looks the same each time it opens.
+
+unlimitedStorage
+Wallpapers are images the user uploads, kept in IndexedDB on their device. A small library of photos exceeds the default storage quota, and exceeding it would silently fail to save the user's own image.
+
+alarms
+Schedules the reminders and countdown timers the user creates. An alarm is the only timer that survives the service worker being suspended; a setTimeout would be discarded and the reminder would never fire.
+
+notifications
+Displays the reminder or timer message at the moment it fires. Used only for reminders and timers the user set themselves.
+
+search
+Runs the query the user types in the new tab's search box through their own default search engine, instead of navigating to a hard-coded engine URL.
+
+scripting
+Registers the optional on-page chat launcher at runtime, and only after the user switches it on in settings and grants access. Nothing is injected into any page until then, and unregistering happens as soon as they switch it off.
+
+sidePanel
+Opens the extension's chat panel in Chrome's side panel when the user clicks the toolbar icon or uses the keyboard shortcut.
+
+favicon
+Reads Chrome's local favicon cache to draw icons for the user's saved quick links, so their list of links never has to be sent to a third-party icon service.
+
+history
+Optional and off by default. When the user switches on the shortcut tile row, this reads their recently visited pages to draw those tiles. The titles and addresses are displayed on the user's own new tab and are never transmitted anywhere.
+
+topSites
+Optional and off by default. An alternative source for the same shortcut tile row, selected by the user in settings, showing their most visited sites instead of the most recent.
+
+host permissions  (one combined field)
+Alcove contacts only the services required by features the user has chosen, directly from the extension's own page:
+- api.anthropic.com, api.openai.com, openrouter.ai: sends the user's chat messages to whichever AI provider they configured, authenticated with the user's own API key.
+- api.open-meteo.com, geocoding-api.open-meteo.com: forecast and city lookup for the weather widget. No account or API key is involved.
+- open.er-api.com: current exchange rates for the currency converter tool.
+- www.google.com/s2/favicons, icons.duckduckgo.com: fetches an icon for a site the user saved as a quick link, once per hostname and then cached locally. Only the site's origin is ever sent, never a path or query, and this can be switched off in settings.
+- www.youtube.com: reads public oEmbed data to show track titles for a playlist the user added.
+Two origins are optional and requested only in context: <all_urls> if the user turns on the on-page chat launcher (revoked when they turn it off), and http://localhost/* if they select a local Ollama server as their AI provider.
+
+
+================================================================
+REMOTE CODE  -  answer: No
+================================================================
+
+Select "No, I am not using remote code".
+
+Why that is the correct answer: the extension's CSP is
+script-src 'self'. No JavaScript, WebAssembly or CSS is loaded from
+outside the package into any extension page, and nothing is eval'd.
+Every script that runs in an extension context ships in the zip.
+
+The one thing worth understanding before you click it: the music
+feature frames one third-party page in an iframe
+(player-html-ashy.vercel.app, allowed via frame-src). That page runs
+its own code in its own origin - exactly like an embedded YouTube or
+Maps player - and cannot execute anything in the extension's
+context. Framing remote content is not the same as including remote
+code, which is why "No" is accurate.
+
+If the form gives you a free-text box alongside the answer, say so
+plainly rather than leaving it blank:
+
+  Alcove executes no remote code; its CSP is script-src 'self' and
+  all scripts ship in the package. It does embed one third-party
+  page in an iframe for YouTube playback, which runs in its own
+  origin and cannot execute code in the extension.
+
+
+================================================================
+DATA USAGE DISCLOSURES
+================================================================
+
+Tick:
+
+  Authentication information
+    The AI provider API key the user enters. Kept in local extension
+    storage on their device, excluded from sync, and sent only to the
+    provider they chose.
+
+  Web history
+    Only if you keep the shortcut tile row. Read on the device to
+    draw the tiles; never transmitted.
+
+Two judgment calls - I would tick both, because over-disclosing
+costs nothing and under-disclosing is a policy violation:
+
+  Location
+    The weather widget sends the coordinates of a city the user
+    picked to Open-Meteo. It is user-chosen, not device location,
+    but it is still location data leaving the machine.
+
+  Personal communications
+    Arguable. Chat messages go to the AI provider the user
+    configured. They are prompts rather than correspondence with
+    another person, so this is defensible either way.
+
+Then tick all three certifications - all three are true of this
+extension:
+  - I do not sell or transfer user data to third parties, outside of
+    the approved use cases
+  - I do not use or transfer user data for purposes unrelated to my
+    item's single purpose
+  - I do not use or transfer user data to determine creditworthiness
+    or for lending purposes
+
+
+================================================================
+LAST TWO
+================================================================
+
+Privacy policy URL
+  Needs privacy/index.html deployed first, then paste the URL here.
+
+Publisher contact email
+  This one is not on the item page. Go to the developer dashboard
+  Settings (account level), add your email, and complete the
+  verification link Google sends. Publishing is blocked until it
+  shows as verified.

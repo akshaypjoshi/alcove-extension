@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * A second view onto the same player the drawer shows. It controls
- * playback without opening anything, which is the point — pausing
+ * playback without opening anything, which is the point - pausing
  * shouldn't cost two clicks and a panel.
  */
 export default function MusicWidget({

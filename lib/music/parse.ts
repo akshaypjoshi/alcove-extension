@@ -58,13 +58,13 @@ export function parsePlaylist(input: string): ParsedPlaylist | null {
 /**
  * YouTube auto-generates Mix and radio playlists ("LR…", "RD…", "UL…")
  * from whatever you're watching, and blocks all of them from embedded
- * players — the embed loads, fires onReady, then answers onError 150 and
+ * players - the embed loads, fires onReady, then answers onError 150 and
  * plays nothing. Caught at add time so it fails with a reason instead of
  * sitting there silently doing nothing.
  */
 export function embedBlockedReason(parsed: ParsedPlaylist): string | null {
   if (/^(RD|LR|UL)/.test(parsed.externalId)) {
-    return "YouTube Mixes and radio playlists can't be embedded — YouTube blocks them. Save it as your own playlist, or use one whose link contains list=PL…";
+    return "YouTube Mixes and radio playlists can't be embedded - YouTube blocks them. Save it as your own playlist, or use one whose link contains list=PL…";
   }
   return null;
 }
