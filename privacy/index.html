@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alcove — Privacy Policy</title>
+<meta name="description" content="What Alcove stores, what it sends, and where. Alcove has no server and collects nothing.">
+<style>
+  /* System fonts on purpose: a privacy policy shouldn't make your browser
+     announce itself to a font CDN just to render. */
+  :root {
+    --ground: #fbfaf8;
+    --surface: #ffffff;
+    --ink: #16151a;
+    --ink-2: #46434f;
+    --muted: #6f6b78;
+    --line: #e4e1dd;
+    --accent: #4a5c8a;
+    --flag: #7a5230;
+    --flag-soft: #f7f0e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #16151a;
+      --surface: #1e1d24;
+      --ink: #ecebf0;
+      --ink-2: #c3c0cc;
+      --muted: #918d9c;
+      --line: #302e38;
+      --accent: #97a9d8;
+      --flag: #e0b183;
+      --flag-soft: #2b2418;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #16151a;
+    --surface: #1e1d24;
+    --ink: #ecebf0;
+    --ink-2: #c3c0cc;
+    --muted: #918d9c;
+    --line: #302e38;
+    --accent: #97a9d8;
+    --flag: #e0b183;
+    --flag-soft: #2b2418;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 1.4rem 5rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  main {
+    max-width: 40rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  header { padding-top: 4rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  h1 { font-size: 2rem; line-height: 1.15; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+
+  .updated {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .lede {
+    font-size: 1.1rem;
+    color: var(--ink-2);
+    margin: 0;
+    padding: 1.1rem 1.3rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+
+  section { display: flex; flex-direction: column; gap: 0.9rem; }
+
+  h2 {
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line);
+    text-wrap: balance;
+  }
+
+  p { margin: 0; color: var(--ink-2); }
+  strong { color: var(--ink); }
+
+  ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.45rem; color: var(--ink-2); }
+
+  .table-scroll { overflow-x: auto; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 30rem; }
+
+  th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--line); }
+
+  thead th {
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  tbody th { font-weight: 600; color: var(--ink); white-space: nowrap; }
+  tbody td { color: var(--ink-2); }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.87em;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.06em 0.32em;
+    border-radius: 3px;
+  }
+
+  .flag {
+    background: var(--flag-soft);
+    border-left: 2px solid var(--flag);
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 4px 4px 0;
+  }
+  .flag p { color: var(--ink-2); }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1.2rem;
+    color: var(--muted);
+    font-size: 0.87rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  a { color: var(--accent); text-underline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 32rem) { h1 { font-size: 1.6rem; } }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <p class="updated">Last updated 4 September 2026</p>
+    <h1>Alcove Privacy Policy</h1>
+  </header>
+
+  <p class="lede">Alcove has no server. There is no account, no analytics, no telemetry and no backend belonging to the developer — so there is nowhere for your data to be sent, and none of it is collected, stored or seen by us.</p>
+
+  <section>
+    <h2>What Alcove is</h2>
+    <p>Alcove replaces Chrome's new tab page with a customisable start page: a wallpaper, clock, search box, shortcuts, widgets and a set of small utilities, plus an optional AI chat panel you open yourself. This policy covers the Alcove browser extension only.</p>
+  </section>
+
+  <section>
+    <h2>What is stored on your device</h2>
+    <p>All of this lives in your browser's own storage and never leaves your computer unless a row below says otherwise.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">What</th><th scope="col">Where</th><th scope="col">Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Settings</th><td>Chrome sync storage</td><td>Layout, wallpaper choice, widgets, quick links, display name, weather location, chosen search engine.</td></tr>
+          <tr><th scope="row">Music playlists</th><td>Chrome sync storage</td><td>The YouTube and Spotify playlist links you add.</td></tr>
+          <tr><th scope="row">AI provider API keys</th><td>Local storage, this device only</td><td>Authenticating to the AI provider you chose. Deliberately excluded from sync.</td></tr>
+          <tr><th scope="row">Chat transcripts</th><td>Local storage, this device only</td><td>So a conversation is still there when you reopen the panel. The most recent 40 messages are kept.</td></tr>
+          <tr><th scope="row">Wallpapers</th><td>IndexedDB, this device only</td><td>The images you upload. They are never transmitted anywhere.</td></tr>
+          <tr><th scope="row">Site icons</th><td>IndexedDB, this device only</td><td>Cached shortcut icons, so each is fetched at most once.</td></tr>
+          <tr><th scope="row">Reminders and timer</th><td>Local storage, this device only</td><td>So they still fire after the browser restarts.</td></tr>
+          <tr><th scope="row">Weather and rate caches</th><td>Local storage, this device only</td><td>Avoiding repeat requests for data that changes slowly.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="flag">
+      <p><strong>About Chrome sync.</strong> The two rows marked <em>sync storage</em> are handled by Chrome's own sync, which means that if you have Chrome Sync switched on they travel through your Google account to your other signed-in devices, under Google's privacy policy rather than ours. That includes the quick links you save, your display name and your weather location. Your API keys, chat transcripts and wallpapers are stored locally precisely so they never do this.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What leaves your device, and to whom</h2>
+    <p>Alcove talks directly to the services below from your browser. Each request goes to that third party, never through us, and each happens only when you use the feature it belongs to. Your data in each case is governed by that service's own privacy policy.</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Service</th><th scope="col">What is sent</th><th scope="col">When</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Your chosen AI provider<br><span style="font-weight:400;color:var(--muted)">Anthropic, OpenAI, OpenRouter, or a local Ollama server</span></th><td>The messages you type, your system prompt, and your own API key.</td><td>Only when you send a chat message.</td></tr>
+          <tr><th scope="row">Open-Meteo</th><td>The coordinates of the location you chose, and the text you type when searching for a city. No key or account.</td><td>When a weather widget is on screen.</td></tr>
+          <tr><th scope="row">er-api.com</th><td>Nothing identifying — a request for current exchange rates.</td><td>When you open the currency converter.</td></tr>
+          <tr><th scope="row">Google and DuckDuckGo icon services</th><td>The origin of a site you saved as a shortcut — never the page path or query.</td><td>Once per hostname, then cached. Can be switched off in Settings.</td></tr>
+          <tr><th scope="row">YouTube<br><span style="font-weight:400;color:var(--muted)">including the playback relay page</span></th><td>The playlist and video IDs from playlists you added, to read public track titles and load cover art and the player.</td><td>When you use the music panel.</td></tr>
+          <tr><th scope="row">Your default search engine</th><td>The text you type in the search box.</td><td>When you search. Alcove hands the query to your browser, which navigates as it would from the address bar.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Browsing history</h2>
+    <p>The shortcut row under the search box can show your recently visited or most visited pages. That feature is <strong>off by default</strong>, and the permission it needs is requested only at the moment you switch it on — not at install.</p>
+    <p>When it is on, Alcove reads those page titles and addresses from Chrome and draws them on the new tab. They are <strong>read on your device and displayed; they are never transmitted anywhere</strong>. Switching the row off stops the reading, and you can revoke the permission in Chrome at any time.</p>
+  </section>
+
+  <section>
+    <h2>What Alcove never does</h2>
+    <ul>
+      <li>No data is sold or transferred to third parties, other than to the services listed above to perform the feature you asked for.</li>
+      <li>No data is used or transferred for any purpose unrelated to Alcove's single purpose.</li>
+      <li>No data is used or transferred to determine creditworthiness or for lending purposes.</li>
+      <li>No advertising, no tracking, no fingerprinting, no profiling, no third-party analytics.</li>
+      <li>Alcove does not read, collect or transmit the content of the web pages you visit.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Deleting your data</h2>
+    <p>Removing Alcove from Chrome deletes everything it stored on your device, including wallpapers, API keys and chat transcripts. Individual items can be cleared sooner: Settings has a reset, chat has a "new chat" button, and saved API keys can be deleted there. Anything already synced through your Google account is cleared by removing the extension while signed in, or through Google's own controls.</p>
+  </section>
+
+  <section>
+    <h2>Children</h2>
+    <p>Alcove is not directed at children under 13 and does not knowingly collect anything from them. Since it collects nothing from anyone, there is nothing held to remove.</p>
+  </section>
+
+  <section>
+    <h2>Changes</h2>
+    <p>If this policy changes, the date at the top changes with it, and a material change will accompany a new version of the extension. The current version always lives at this address.</p>
+  </section>
+
+  <section>
+    <h2>Contact</h2>
+    <p>Questions about this policy or about Alcove's handling of data: <a href="mailto:REPLACE_WITH_YOUR_EMAIL">REPLACE_WITH_YOUR_EMAIL</a>.</p>
+  </section>
+
+  <footer>
+    <span>Alcove — a quiet corner of your browser.</span>
+    <span>This policy describes the Alcove browser extension and nothing else.</span>
+  </footer>
+
+</main>
+</body>
+</html>

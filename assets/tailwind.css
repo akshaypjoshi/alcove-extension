@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/**
+ * Tabby runs on top of a user-supplied wallpaper, so the palette is built
+ * around translucency: surfaces are semi-transparent and rely on backdrop
+ * blur rather than solid fills. `--surface` / `--surface-strong` are the
+ * two glass levels; everything else is standard shadcn.
+ */
+:root {
+  --radius: 0.75rem;
+
+  /* One width for every right-hand drawer (chat and tools), so the dock
+     and the CTA can shift by exactly the right amount without magic
+     numbers scattered across three components. */
+  --drawer-w: 28rem;
+  /* How far right-anchored furniture slides to clear an open drawer. The
+     dock tucks in beside it; widgets have to clear the dock as well. */
+  --drawer-shift: calc(var(--drawer-w) + 0.75rem);
+  --drawer-shift-widget: calc(var(--drawer-w) + 5.25rem);
+
+  --background: oklch(0.98 0.003 250);
+  --foreground: oklch(0.21 0.02 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.02 265);
+  --primary: oklch(0.55 0.16 260);
+  --primary-foreground: oklch(0.98 0.01 250);
+  --secondary: oklch(0.96 0.006 260);
+  --secondary-foreground: oklch(0.28 0.02 265);
+  --muted: oklch(0.96 0.006 260);
+  --muted-foreground: oklch(0.52 0.015 260);
+  --accent: oklch(0.94 0.02 260);
+  --accent-foreground: oklch(0.28 0.02 265);
+  --destructive: oklch(0.58 0.21 27);
+  --destructive-foreground: oklch(0.98 0.01 250);
+  --border: oklch(0.9 0.008 260);
+  --input: oklch(0.9 0.008 260);
+  --ring: oklch(0.55 0.16 260);
+
+  --surface-strong: oklch(1 0 0 / 0.72);
+  --surface-border: oklch(0.5 0 0 / 0.12);
+}
+
+.dark {
+  --background: oklch(0.18 0.015 265);
+  --foreground: oklch(0.96 0.005 250);
+  --card: oklch(0.22 0.018 265);
+  --card-foreground: oklch(0.96 0.005 250);
+  --popover: oklch(0.22 0.018 265);
+  --popover-foreground: oklch(0.96 0.005 250);
+  --primary: oklch(0.72 0.14 258);
+  --primary-foreground: oklch(0.18 0.02 265);
+  --secondary: oklch(0.28 0.02 265);
+  --secondary-foreground: oklch(0.96 0.005 250);
+  --muted: oklch(0.28 0.02 265);
+  --muted-foreground: oklch(0.68 0.015 260);
+  --accent: oklch(0.32 0.025 265);
+  --accent-foreground: oklch(0.96 0.005 250);
+  --destructive: oklch(0.62 0.19 25);
+  --destructive-foreground: oklch(0.98 0.01 250);
+  --border: oklch(1 0 0 / 0.12);
+  --input: oklch(1 0 0 / 0.16);
+  --ring: oklch(0.72 0.14 258);
+
+  --surface-strong: oklch(0.19 0.02 265 / 0.62);
+  --surface-border: oklch(1 0 0 / 0.14);
+}
+
+/**
+ * Text sitting directly on the wallpaper takes its colour from the
+ * wallpaper's luminance, never from the UI theme. Tying it to the theme
+ * means light mode over a dark photo paints dark text on a dark photo —
+ * and the wallpaper doesn't change when you flip the theme.
+ *
+ * WallpaperLayer sets data-wallpaper; the unset case assumes dark, which
+ * is what every built-in gradient except linen and mint is.
+ */
+:root,
+:root[data-wallpaper="dark"] {
+  --on-wallpaper: oklch(0.98 0.005 250);
+  --on-wallpaper-shadow: oklch(0 0 0 / 0.35);
+
+  /* Thin glass takes its tint from the wallpaper too. Over a dark photo
+     it lightens; over a light one it darkens. A fixed dark fill — what
+     this used to be — reads as a flat black slab, not glass. */
+  --glass-fill: oklch(1 0 0 / 0.1);
+  --glass-fill-hover: oklch(1 0 0 / 0.16);
+  --glass-line: oklch(1 0 0 / 0.16);
+  --glass-highlight: oklch(1 0 0 / 0.22);
+  --vignette: 0.5;
+}
+
+:root[data-wallpaper="light"] {
+  --on-wallpaper: oklch(0.21 0.02 265);
+  --on-wallpaper-shadow: oklch(1 0 0 / 0.45);
+
+  --glass-fill: oklch(1 0 0 / 0.5);
+  --glass-fill-hover: oklch(1 0 0 / 0.68);
+  --glass-line: oklch(1 0 0 / 0.7);
+  --glass-highlight: oklch(1 0 0 / 0.85);
+  /* A black vignette that reads as depth on a dark photo just turns a
+     light one muddy, so it's much lighter here. */
+  --vignette: 0.16;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-border: var(--surface-border);
+  --color-on-wallpaper: var(--on-wallpaper);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+  }
+  /* Thin scrollbars everywhere; the default ones are loud on glass. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, currentColor 25%, transparent)
+      transparent;
+  }
+}
+
+/**
+ * What sells glass is the edge, not the fill: a bright 1px inset line
+ * along the top catches the "light", and the drop shadow separates the
+ * panel from the wallpaper. Saturation boost keeps the colour behind it
+ * from going grey under the blur.
+ */
+@utility glass {
+  background-color: var(--glass-fill);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    0 8px 32px -8px oklch(0 0 0 / 0.45);
+}
+
+/**
+ * Panel glass — drawers and dialogs. Translucent like the widgets, but it
+ * hosts dense UI, so readability comes from a much heavier blur rather
+ * than from opacity: 44px flattens whatever is behind into a wash of
+ * colour, which text sits on top of cleanly. Follows the UI theme, unlike
+ * thin glass, because everything inside it is themed.
+ */
+@utility glass-strong {
+  background-color: var(--surface-strong);
+  border: 1px solid var(--glass-line);
+  backdrop-filter: blur(44px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    0 24px 64px -12px oklch(0 0 0 / 0.5);
+}
+
+/* Text sitting directly on a photo needs a shadow to stay readable. */
+@utility text-on-wallpaper {
+  color: var(--on-wallpaper);
+  text-shadow: 0 1px 12px var(--on-wallpaper-shadow);
+}
+
+/**
+ * Entrance. Everything rises a few pixels on load, staggered by role —
+ * the single cheapest thing that separates "a web page" from "an app".
+ * Respects reduced-motion by collapsing to a plain fade.
+ */
+@keyframes tabby-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@utility rise {
+  animation: tabby-rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  /* Inheritable, so a container can stagger children it doesn't own. An
+     inline animationDelay still wins over this. */
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes tabby-rise {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

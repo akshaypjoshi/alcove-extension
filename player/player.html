@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Alcove player</title>
+    <style>
+      html, body { margin: 0; background: #000; overflow: hidden; }
+      #player { width: 100vw; height: 100vh; border: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="player"></div>
+
+    <script>
+      /**
+       * The relay that makes YouTube playable from the Alcove extension.
+       *
+       * Chrome sends no Referer header from extension pages, and YouTube
+       * uses it to identify the embedder — embedding it directly there
+       * fails with error 153 (embedder.identity.missing.referrer). This
+       * page is an ordinary web page, so the header is present and the
+       * player works. Alcove frames this, and this frames YouTube.
+       *
+       * Being a normal page also means the official IFrame API script can
+       * be loaded, which extension pages may not do at all.
+       */
+      var params = new URLSearchParams(location.search);
+      var list = params.get("list") || "";
+      // Only this origin may drive the player, and it's the only origin
+      // state is sent to.
+      var parentOrigin = params.get("parent") || "";
+
+      var player = null;
+      var ready = false;
+
+      function send(type, payload) {
+        if (!parentOrigin) return;
+        parent.postMessage({ __alcove: type, payload: payload }, parentOrigin);
+      }
+
+      function snapshot() {
+        if (!player || !ready) return null;
+        var data = (player.getVideoData && player.getVideoData()) || {};
+        return {
+          playing: player.getPlayerState() === 1,
+          volume: Math.round(player.getVolume ? player.getVolume() : 100),
+          muted: player.isMuted ? player.isMuted() : false,
+          track: data.title,
+          artist: data.author,
+          videoIds: (player.getPlaylist && player.getPlaylist()) || [],
+          index: player.getPlaylistIndex ? player.getPlaylistIndex() : -1,
+        };
+      }
+
+      window.onYouTubeIframeAPIReady = function () {
+        player = new YT.Player("player", {
+          width: "100%",
+          height: "100%",
+          playerVars: {
+            listType: "playlist",
+            list: list,
+            // Nothing here is ever seen; these only reduce chrome around it.
+            rel: 0,
+            modestbranding: 1,
+            playsinline: 1,
+          },
+          events: {
+            onReady: function () {
+              ready = true;
+              send("state", snapshot());
+            },
+            onStateChange: function () {
+              send("state", snapshot());
+            },
+            onError: function (e) {
+              send("error", e.data);
+            },
+          },
+        });
+      };
+
+      window.addEventListener("message", function (event) {
+        if (parentOrigin && event.origin !== parentOrigin) return;
+        var message = event.data;
+        if (!message || message.__alcove !== "cmd") return;
+        if (!player || !ready) return;
+
+        var args = message.args || [];
+        try {
+          switch (message.func) {
+            case "play": player.playVideo(); break;
+            case "pause": player.pauseVideo(); break;
+            case "next": player.nextVideo(); break;
+            case "previous": player.previousVideo(); break;
+            case "shuffle": player.setShuffle(!!args[0]); break;
+            case "volume":
+              // Raising the volume implies unmuting, or the slider does
+              // nothing on a muted player.
+              player.unMute();
+              player.setVolume(Number(args[0]) || 0);
+              break;
+            case "muted": args[0] ? player.mute() : player.unMute(); break;
+            case "playAt": player.playVideoAt(Number(args[0]) || 0); break;
+          }
+        } catch (err) {
+          /* a failed command shouldn't take the relay down */
+        }
+        send("state", snapshot());
+      });
+
+      // Position and volume aren't push events, so poll a little.
+      setInterval(function () {
+        var state = snapshot();
+        if (state) send("state", state);
+      }, 2000);
+
+      var tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    </script>
+  </body>
+</html>

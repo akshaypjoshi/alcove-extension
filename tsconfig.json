@@ -1,0 +1,18 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@": ["."],
+      "@/*": ["./*"]
+    }
+  },
+  // .wxt/wxt.d.ts is what pulls in the `#imports` module declaration and
+  // the auto-imported globals (`browser`, `defineBackground`, …). Excluding
+  // the .wxt directory would silently drop it and every one of those turns
+  // into "Cannot find name".
+  "include": ["**/*.ts", "**/*.tsx", ".wxt/wxt.d.ts"],
+  "exclude": ["node_modules", ".output"]
+}
