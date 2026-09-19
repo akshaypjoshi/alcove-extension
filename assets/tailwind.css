@@ -73,7 +73,7 @@
 /**
  * Text sitting directly on the wallpaper takes its colour from the
  * wallpaper's luminance, never from the UI theme. Tying it to the theme
- * means light mode over a dark photo paints dark text on a dark photo —
+ * means light mode over a dark photo paints dark text on a dark photo -
  * and the wallpaper doesn't change when you flip the theme.
  *
  * WallpaperLayer sets data-wallpaper; the unset case assumes dark, which
@@ -85,8 +85,8 @@
   --on-wallpaper-shadow: oklch(0 0 0 / 0.35);
 
   /* Thin glass takes its tint from the wallpaper too. Over a dark photo
-     it lightens; over a light one it darkens. A fixed dark fill — what
-     this used to be — reads as a flat black slab, not glass. */
+     it lightens; over a light one it darkens. A fixed dark fill - what
+     this used to be - reads as a flat black slab, not glass. */
   --glass-fill: oklch(1 0 0 / 0.1);
   --glass-fill-hover: oklch(1 0 0 / 0.16);
   --glass-line: oklch(1 0 0 / 0.16);
@@ -178,7 +178,7 @@
 }
 
 /**
- * Panel glass — drawers and dialogs. Translucent like the widgets, but it
+ * Panel glass - drawers and dialogs. Translucent like the widgets, but it
  * hosts dense UI, so readability comes from a much heavier blur rather
  * than from opacity: 44px flattens whatever is behind into a wash of
  * colour, which text sits on top of cleanly. Follows the UI theme, unlike
@@ -200,10 +200,43 @@
 }
 
 /**
- * Entrance. Everything rises a few pixels on load, staggered by role —
+ * Entrance. Everything rises a few pixels on load, staggered by role -
  * the single cheapest thing that separates "a web page" from "an app".
  * Respects reduced-motion by collapsing to a plain fade.
  */
+/**
+ * The ticker crawl. Two copies of the headline row sit side by side and the
+ * track slides exactly half its width, so the seam lands back where it
+ * started and the loop is invisible. Duration is set inline from the
+ * measured width, which keeps the speed constant whether there are six
+ * headlines or sixty.
+ */
+@keyframes tabby-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/**
+ * Play state comes from a variable rather than an inline property. Writing
+ * the `animation` shorthand inline also writes `animation-play-state:
+ * running` inline, which no rule and no hover state can then outrank.
+ */
+@utility ticker-track {
+  animation: tabby-ticker var(--ticker-dur, 60s) linear infinite;
+  animation-play-state: var(--ticker-play, running);
+
+  /* The component already swaps to a rotating headline under this
+     setting, so the track is not normally rendered at all. Belt and
+     braces for the frame between a preference change and the re-render. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 @keyframes tabby-rise {
   from {
     opacity: 0;

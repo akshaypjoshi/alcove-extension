@@ -55,10 +55,13 @@ export default function ActionMenu({
     <div
       ref={rootRef}
       className={cn(
-        "rise fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3 transition-transform duration-300 ease-out",
+        "rise fixed right-6 z-40 flex flex-col items-end gap-3 transition-transform duration-300 ease-out",
         shifted && "-translate-x-[calc(var(--drawer-w)+0.25rem)]",
       )}
-      style={{ animationDelay: "460ms" }}
+      style={{
+        animationDelay: "460ms",
+        bottom: "calc(1.5rem + var(--ticker-h, 0px))",
+      }}
     >
       {ACTIONS.map(({ id, label, icon: Icon }, index) => (
         <button

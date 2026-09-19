@@ -72,7 +72,12 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onInstalled.addListener(({ reason }) => {
-    if (reason === "install") browser.runtime.openOptionsPage();
+    // A short guided pass rather than the full settings panel. The panel
+    // is every option at once, which is the wrong first thing to hand
+    // someone who has not seen the product yet.
+    if (reason === "install") {
+      browser.tabs.create({ url: browser.runtime.getURL("/welcome.html") });
+    }
     // Chrome drops an extension's alarms on reload/update, so pending
     // reminders have to be re-armed from storage.
     syncAlarms();

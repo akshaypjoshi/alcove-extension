@@ -157,7 +157,7 @@
 <main>
 
   <header>
-    <p class="updated">Last updated 4 September 2026</p>
+    <p class="updated">Last updated 13 September 2026</p>
     <h1>Alcove Privacy Policy</h1>
   </header>
 
@@ -184,6 +184,8 @@
           <tr><th scope="row">Wallpapers</th><td>IndexedDB, this device only</td><td>The images you upload. They are never transmitted anywhere.</td></tr>
           <tr><th scope="row">Site icons</th><td>IndexedDB, this device only</td><td>Cached shortcut icons, so each is fetched at most once.</td></tr>
           <tr><th scope="row">Reminders and timer</th><td>Local storage, this device only</td><td>So they still fire after the browser restarts.</td></tr>
+          <tr><th scope="row">News topics</th><td>Chrome sync storage</td><td>The sections and keywords you chose to follow.</td></tr>
+          <tr><th scope="row">Cached headlines</th><td>Local storage, this device only</td><td>So a new tab paints without waiting on the network. Cleared when you remove your last topic.</td></tr>
           <tr><th scope="row">Weather and rate caches</th><td>Local storage, this device only</td><td>Avoiding repeat requests for data that changes slowly.</td></tr>
         </tbody>
       </table>
@@ -207,10 +209,23 @@
           <tr><th scope="row">er-api.com</th><td>Nothing identifying - a request for current exchange rates.</td><td>When you open the currency converter.</td></tr>
           <tr><th scope="row">Google and DuckDuckGo icon services</th><td>The origin of a site you saved as a shortcut - never the page path or query.</td><td>Once per hostname, then cached. Can be switched off in Settings.</td></tr>
           <tr><th scope="row">YouTube<br><span style="font-weight:400;color:var(--muted)">including the playback relay page</span></th><td>The playlist and video IDs from playlists you added, to read public track titles and load cover art and the player.</td><td>When you use the music panel.</td></tr>
+          <tr><th scope="row">Google News</th><td>The name of a section you picked, or a keyword you typed, as a request for that feed. No account, no identifier, and nothing about you.</td><td>Only if you add a news topic, and at most once every 20 minutes per topic.</td></tr>
           <tr><th scope="row">Your default search engine</th><td>The text you type in the search box.</td><td>When you search. Alcove hands the query to your browser, which navigates as it would from the address bar.</td></tr>
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section>
+    <h2>News</h2>
+    <p>The news feature is <strong>off until you pick a topic</strong>, and the access it needs to reach Google News is requested at that moment rather than at install. Remove your last topic and Alcove hands the access back and deletes the cached headlines.</p>
+    <p>What is sent is the topic itself and nothing else: "Technology", or whatever keyword you typed. Google sees that request the way it would see anyone loading a public feed. Reading a headline is a normal visit to the publisher, under their own policy.</p>
+  </section>
+
+  <section>
+    <h2>Images</h2>
+    <p>The image tools and the editor run entirely in your browser. A photo you convert, resize or edit is <strong>read from disk into memory and never uploaded</strong>, to us or to anyone else. There is no request to send it in: the conversion is done by your own browser's canvas.</p>
+    <p>Nothing is kept afterwards either. Close the tab and the image is gone from memory; only the file you chose to save remains, wherever you saved it.</p>
   </section>
 
   <section>

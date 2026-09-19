@@ -1,9 +1,10 @@
 import type { LucideIcon } from "lucide-react";
-import { Clock, CloudSun, Music } from "lucide-react";
+import { Clock, CloudSun, Newspaper, Music } from "lucide-react";
 import type { ComponentType } from "react";
 
 import ClockWidget from "@/components/widgets/ClockWidget";
 import MusicWidget from "@/components/widgets/MusicWidget";
+import NewsWidget from "@/components/widgets/NewsWidget";
 import WeatherWidget from "@/components/widgets/WeatherWidget";
 import type { Settings, WidgetInstance, WidgetSize } from "@/lib/settings";
 
@@ -92,6 +93,28 @@ export const WIDGETS: WidgetDef[] = [
     sizes: ["sm", "md"],
     defaultSize: "md",
     Component: WeatherWidget,
+  },
+  {
+    type: "news",
+    label: "News",
+    description: "Top headlines from the topics you follow",
+    icon: Newspaper,
+    sizes: ["sm", "md"],
+    defaultSize: "md",
+    options: [
+      {
+        key: "topic",
+        label: "Topic",
+        fallback: "all",
+        // Built from the user's own list, the way the clock builds its
+        // zone choices from settings.worldClocks.
+        choices: (settings) => [
+          { id: "all", label: "All topics" },
+          ...settings.news.topics.map((t) => ({ id: t.id, label: t.label })),
+        ],
+      },
+    ],
+    Component: NewsWidget,
   },
 ];
 

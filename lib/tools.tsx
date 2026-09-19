@@ -7,6 +7,8 @@ import {
   Clock,
   DollarSign,
   ListChecks,
+  Image as ImageIcon,
+  Newspaper,
   Palette,
   Ruler,
   StickyNote,
@@ -16,12 +18,14 @@ import {
 import type { ComponentType } from "react";
 
 import CalculatorTool from "@/components/tools/Calculator";
+import ImagesTool from "@/components/tools/Images";
 import JsonTool from "@/components/tools/JsonTool";
 import Lorem from "@/components/tools/Lorem";
 import RemindersTool from "@/components/tools/Reminders";
 import Todos from "@/components/tools/Todos";
 import ColorTool from "@/components/tools/ColorTool";
 import CurrencyConverter from "@/components/tools/CurrencyConverter";
+import NewsTool from "@/components/tools/News";
 import Notes from "@/components/tools/Notes";
 import TextTools from "@/components/tools/TextTools";
 import TimerTool from "@/components/tools/Timer";
@@ -124,6 +128,20 @@ export const TOOLS: ToolDef[] = [
     description: "Base64, hashes, case conversion, UUIDs",
     icon: Type,
     Component: TextTools,
+  },
+  {
+    id: "news",
+    label: "News",
+    description: "Headlines for the topics you follow",
+    icon: Newspaper,
+    Component: NewsTool,
+  },
+  {
+    id: "images",
+    label: "Images",
+    description: "Convert, resize and compress, without uploading anything",
+    icon: ImageIcon,
+    Component: ImagesTool,
   },
 ];
 

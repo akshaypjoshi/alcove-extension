@@ -3,6 +3,7 @@ import { BROWSER_ENGINE, hasBrowserSearch } from "@/lib/search";
 import { useCallback, useEffect, useState } from "react";
 import type { Units, WeatherLocation } from "./weather";
 import type { RecentSource } from "./recents";
+import type { NewsTopic } from "./news";
 
 /**
  * Everything the user can configure lives in one object in `sync` storage,
@@ -83,6 +84,12 @@ export interface WidgetInstance {
   size: WidgetSize;
   placement: WidgetPlacement;
   /**
+   * Widgets sharing a stack id in the same zone occupy one slot and show
+   * one at a time, the way iOS stacks do. Absent means its own slot, so
+   * every widget saved before stacks existed keeps its place.
+   */
+  stack?: string;
+  /**
    * Per-instance choices declared by the widget itself (see `options` in
    * lib/widgets.tsx) - the clock's analogue/digital style and time zone,
    * for instance. Kept as loose strings so the registry owns the meaning
@@ -105,6 +112,23 @@ export interface DockSettings {
 export interface WeatherSettings {
   location: WeatherLocation | null;
   units: Units;
+}
+
+export interface NewsSettings {
+  /**
+   * Empty on a fresh install, deliberately. Nothing is fetched and no
+   * permission is asked for until the user picks a topic, so the feature
+   * costs an uninterested user nothing.
+   */
+  topics: NewsTopic[];
+  /** Scrolling strip along the bottom edge, the way a news channel does it. */
+  ticker: boolean;
+}
+
+export interface ImageSettings {
+  /** Remembered from the last export, so the tool opens where you left it. */
+  format: string;
+  quality: number;
 }
 
 export interface AiSettings {
@@ -139,9 +163,15 @@ export interface Settings {
   dock: DockSettings;
   /** Ids from lib/tools registry, in dock order. */
   enabledTools: string[];
+  /** Set once the welcome pass has been seen or skipped. */
+  onboarded: boolean;
   showWidgets: boolean;
   widgets: WidgetInstance[];
+  /** Seconds between stack rotations. 0 turns rotation off. */
+  widgetRotate: number;
   weather: WeatherSettings;
+  news: NewsSettings;
+  images: ImageSettings;
   quickLinks: QuickLink[];
   /** IANA zones shown by the World Clock tool. */
   worldClocks: string[];
@@ -202,8 +232,12 @@ export const DEFAULT_SETTINGS: Settings = {
     "lorem",
     "color",
     "text",
+    "news",
+    "images",
   ],
+  onboarded: false,
   showWidgets: true,
+  widgetRotate: 20,
   // Enabled out of the box with no location set: the card's own "pick a
   // city" state is better onboarding than an empty page plus a settings
   // panel the user has to go find.
@@ -211,6 +245,8 @@ export const DEFAULT_SETTINGS: Settings = {
     { id: "weather", type: "weather", size: "md", placement: "top-right" },
   ],
   weather: { location: null, units: "metric" },
+  news: { topics: [], ticker: false },
+  images: { format: "image/jpeg", quality: 0.85 },
   quickLinks: [
     { id: "gh", title: "GitHub", url: "https://github.com" },
     { id: "gm", title: "Gmail", url: "https://mail.google.com" },
@@ -260,6 +296,8 @@ function hydrate(value: Settings | null): Settings {
     ...value,
     wallpaper: { ...DEFAULT_SETTINGS.wallpaper, ...value.wallpaper },
     weather: { ...DEFAULT_SETTINGS.weather, ...value.weather },
+    news: { ...DEFAULT_SETTINGS.news, ...value.news },
+    images: { ...DEFAULT_SETTINGS.images, ...value.images },
     dock: { ...DEFAULT_SETTINGS.dock, ...value.dock },
     // Instances stored before placements existed have no zone; anchor them
     // top-right rather than dropping them off the page.

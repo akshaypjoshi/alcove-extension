@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/dialog";
 import ActionMenu from "@/components/newtab/ActionMenu";
 import ChatView from "@/components/chat/ChatView";
+import CommandPalette from "@/components/newtab/CommandPalette";
+import NewsTicker from "@/components/newtab/NewsTicker";
 import Clock from "@/components/newtab/Clock";
 import Drawer from "@/components/newtab/Drawer";
 import QuickLinks from "@/components/newtab/QuickLinks";
@@ -21,7 +23,10 @@ import WidgetLayer from "@/components/newtab/WidgetLayer";
 import MusicDrawerBody from "@/components/music/MusicDrawerBody";
 import SettingsPanel from "@/components/settings/SettingsPanel";
 import { MusicProvider } from "@/lib/music/context";
-import { useSettings } from "@/lib/settings";
+import { buildCommands } from "@/lib/commands";
+import { getWidget } from "@/lib/widgets";
+import { runSearch } from "@/lib/search";
+import { SEARCH_ENGINES, useSettings, type Settings } from "@/lib/settings";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +36,25 @@ import { cn } from "@/lib/utils";
  * of screen, and "two overlapping panels" is a worse answer than "the
  * dock stays visible so switching is one click".
  */
+function drop(widgets: Settings["widgets"], id: string) {
+  return widgets.filter((w) => w.id !== id);
+}
+
+/**
+ * A stack of one is just a widget. Clearing the marker keeps the dots and
+ * the unstack button from showing on something that has nothing to page
+ * through.
+ */
+function dissolve(widgets: Settings["widgets"]) {
+  const counts = new Map<string, number>();
+  for (const w of widgets) {
+    if (w.stack) counts.set(w.stack, (counts.get(w.stack) ?? 0) + 1);
+  }
+  return widgets.map((w) =>
+    w.stack && counts.get(w.stack) === 1 ? { ...w, stack: undefined } : w,
+  );
+}
+
 type Panel =
   { kind: "chat" } | { kind: "music" } | { kind: "tool"; id: string } | null;
 
@@ -38,6 +62,7 @@ export default function App() {
   const { settings, update } = useSettings();
   const [panel, setPanel] = useState<Panel>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useTheme(settings?.theme);
 
@@ -73,6 +98,44 @@ export default function App() {
         : { kind: "tool", id },
     );
 
+  /**
+   * Built from the live registries, so a tool or widget added anywhere
+   * else turns up in the palette without a second registration. Memoised
+   * on the settings it actually reads: rebuilding this on every keystroke
+   * in the palette would rebuild the list being filtered.
+   */
+  const commands = useMemo(
+    () =>
+      settings
+        ? buildCommands(settings, {
+            openTool: (id) => setPanel({ kind: "tool", id }),
+            openChat: () => setPanel({ kind: "chat" }),
+            openMusic: () => setPanel({ kind: "music" }),
+            openSettings: () => setSettingsOpen(true),
+            update,
+            navigate: (url) => {
+              window.location.href = url;
+            },
+            addWidget: (type) => {
+              const def = getWidget(type);
+              if (!def) return;
+              update({
+                widgets: [
+                  ...settings.widgets,
+                  {
+                    id: crypto.randomUUID(),
+                    type,
+                    size: def.defaultSize,
+                    placement: "top-right",
+                  },
+                ],
+              });
+            },
+          })
+        : [],
+    [settings, update],
+  );
+
   // "/" focuses search the way it does everywhere else; Escape closes the
   // drawer. Both are skipped while a field already has focus.
   useEffect(() => {
@@ -84,7 +147,17 @@ export default function App() {
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
 
-      if (e.key === "Escape") setPanel(null);
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+        // Works while typing too: the whole point is to reach it from
+        // wherever you are, including the search box.
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        return;
+      }
+
+      // The palette handles its own Escape. Without this guard, dismissing
+      // it would also close whatever drawer was already open behind it.
+      if (e.key === "Escape" && !paletteOpen) setPanel(null);
       if (e.key === "/" && !typing) {
         e.preventDefault();
         document.querySelector<HTMLInputElement>("form input")?.focus();
@@ -92,7 +165,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [paletteOpen]);
 
   // Render nothing rather than a default-settings flash: the wallpaper
   // swapping in a beat after paint is the most visible jank on this page.
@@ -151,8 +224,38 @@ export default function App() {
                 ),
               })
             }
-            onRemove={(id) =>
-              update({ widgets: settings.widgets.filter((w) => w.id !== id) })
+            onRemove={(id) => update({ widgets: dissolve(drop(settings.widgets, id)) })}
+            onStack={(sourceId, targetId) => {
+              const target = settings.widgets.find((w) => w.id === targetId);
+              const source = settings.widgets.find((w) => w.id === sourceId);
+              if (!target || !source) return;
+              // Joining an existing stack keeps its id; two loose widgets
+              // mint a new one. The source adopts the target's slot
+              // wholesale, because a stack is one position and one size.
+              const stack = target.stack ?? crypto.randomUUID();
+              update({
+                widgets: settings.widgets.map((w) =>
+                  w.id === targetId
+                    ? { ...w, stack }
+                    : w.id === sourceId
+                      ? {
+                          ...w,
+                          stack,
+                          placement: target.placement,
+                          size: target.size,
+                        }
+                      : w,
+                ),
+              });
+            }}
+            onUnstack={(id) =>
+              update({
+                widgets: dissolve(
+                  settings.widgets.map((w) =>
+                    w.id === id ? { ...w, stack: undefined } : w,
+                  ),
+                ),
+              })
             }
           />
         )}
@@ -220,6 +323,19 @@ export default function App() {
         </Drawer>
 
         <ToolDrawer toolId={activeToolId} onClose={() => setPanel(null)} />
+
+        <CommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          commands={commands}
+          onSearchWeb={(q) => {
+            const engine =
+              SEARCH_ENGINES[settings.searchEngine] ?? SEARCH_ENGINES.browser;
+            runSearch(q, engine.url, settings.searchEngine);
+          }}
+        />
+
+        <NewsTicker shifted={panelOpen} />
 
         {/* Fires regardless of whether the OS let the notification through. */}
         <ReminderAlert />

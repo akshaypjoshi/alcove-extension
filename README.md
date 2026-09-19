@@ -55,6 +55,7 @@ same way - the floating chat and the tools are unaffected.
 
 | Surface | What's there |
 |---|---|
+| **First run** | a three step pass: wallpaper, links, name and tools |
 | **New tab** | clock, greeting, search, shortcut tiles, quick-link rail, tool dock, widgets, chat |
 | **Side panel** | the same chat, docked - toolbar icon, or `⌘⇧Y` / `Ctrl+Shift+Y` |
 | **Any page** | an opt-in launcher button that opens the chat in a floating panel |
@@ -84,6 +85,16 @@ all: it's optional, and the row asks for it in place the first time you switch
 it on. Say no and everything else still works. Settings → Look also offers
 *most visited* (`topSites`), and 4-10 tiles.
 
+**Stacks.** Drag one widget onto another and they share a slot, showing one at
+a time with dots to page between them - the same gesture iOS uses, and the only
+way to build a stack that doesn't need a menu. Which face is showing is derived
+from the clock (`floor(now / interval) % members`) rather than kept in state, so
+every open tab agrees on it and a tab left overnight isn't still sitting on
+whatever loaded hours ago. Hovering holds the current face still. All members
+share one size, because a stack is one footprint.
+
+**Drag a widget to move it.**
+
 **Widgets.** iOS-style cards in two fixed shapes - small (square) and wide.
 Drag one to move it; it snaps to one of six anchor zones. Hovering reveals
 resize and remove on the corner. *Clock* comes in analogue or digital in any of
@@ -105,6 +116,23 @@ all - it's registered at runtime by `lib/companion.ts` once you switch
 *Settings → AI → Chat on any page* on and Chrome grants the permission.
 Switching it off unregisters the script and hands the permission back. A fresh
 install is a pure new-tab replacement, and the install prompt says so.
+
+**First run.** Installing opens `welcome.html`, not the settings panel. The
+panel is every option at once, which reads as assembly required to someone who
+has not seen the page yet, so instead it asks for the three things that stop it
+looking like a demo: a wallpaper, the links you actually use, and your name plus
+which tools sit in the dock. Each choice writes straight to settings and the
+real `WallpaperLayer` sits behind the card, so picking a gradient changes the
+page under you rather than a preview of it. The last panel teaches `⌘K`, which
+is the one thing nobody finds on their own. An `onboarded` flag keeps an update
+from reopening it.
+
+**Command palette.** `⌘K` / `Ctrl+K` reaches everything: tools, quick links,
+widgets, the theme, settings. It is built from the same registries the dock and
+the settings panel read, so a tool added to `lib/tools.tsx` turns up in it
+without a second registration. Ranking prefers a real substring over scattered
+letters, so `cal` puts Calculator above Colour rather than letting letter-hopping
+win, and a query that matches nothing offers to search the web for it instead.
 
 **Reminders** fire a real system notification. Type them the way you'd say them
 - `call mom in 5m`, `standup at 9am`, `gym tomorrow at 6am` - and the time is

@@ -113,7 +113,7 @@ www.google.com/s2/favicons, icons.duckduckgo.com - fetches an icon for a site sa
 
 www.youtube.com - public oEmbed data for track titles in a playlist the user added.
 
-Two origins are optional and requested only in context: <all_urls> if the user turns on the on-page chat launcher (revoked when they turn it off), and http://localhost/* if they pick a local Ollama server as their AI provider.
+Three origins are optional and requested only in context: <all_urls> if the user turns on the on-page chat launcher (revoked when they turn it off), http://localhost/* if they pick a local Ollama server as their AI provider, and news.google.com if they add a news topic. The news origin is requested when the first topic is chosen and handed back when the last one is removed; only the section name or keyword is sent.
 
 ================================================================
 Are you using remote code?

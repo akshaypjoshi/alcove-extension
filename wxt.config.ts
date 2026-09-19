@@ -90,12 +90,33 @@ export default defineConfig({
      */
     optional_permissions:
       browser === "firefox"
-        ? ["history", "topSites", "<all_urls>", "http://localhost/*"]
+        ? [
+            "history",
+            "topSites",
+            "<all_urls>",
+            "http://localhost/*",
+            "https://news.google.com/*",
+          ]
         : ["history", "topSites"],
 
+    /**
+     * news.google.com is optional rather than a required host, and asked
+     * for when the user picks their first topic.
+     *
+     * A required host added in an update trips Chrome's permission-increase
+     * flow, which disables the extension for everyone already running it
+     * until they accept a fresh prompt. Not a price worth charging existing
+     * users for a feature they may never open.
+     */
     ...(browser === "firefox"
       ? {}
-      : { optional_host_permissions: ["<all_urls>", "http://localhost/*"] }),
+      : {
+          optional_host_permissions: [
+            "<all_urls>",
+            "http://localhost/*",
+            "https://news.google.com/*",
+          ],
+        }),
 
     // Required for direct fetch from extension-origin pages. Without these
     // the chat iframe hits CORS even though it's your own document.

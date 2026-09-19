@@ -34,11 +34,23 @@ A row of the sites you keep going back to, under the search bar. One tile per si
 
 WIDGETS
 
-Cards in the style of the ones on your phone, showing the weather, a clock in whatever time zone you need, or what's playing. Drag them to any of six anchor points, in square or wide.
+Cards in the style of the ones on your phone, showing the weather, a clock in whatever time zone you need, or what's playing. Drag them to any of six anchor points, in square or wide. Drop one onto another and they share a slot, taking turns like a stack on your phone.
 
 A DOCK OF SMALL TOOLS
 
 The everyday sort: calculators and converters, clocks and timers, reminders and notes. There are a few odds and ends for developers too. Each opens in a side drawer instead of a cramped popup, and you can switch off whatever you don't use. The dock magnifies under your pointer, and can sit along the bottom, the left or the right.
+
+NEWS ON THE TOPICS YOU PICK
+
+Choose from the usual sections, or follow a subject by name, and the new tab shows headlines for those and nothing else. Each story lists its publisher and how long ago it ran. Read them in a panel, or switch on the ticker and let them scroll along the bottom of the page the way a news channel does. It stays off until you pick a topic, and the access it needs is asked for at that moment rather than at install.
+
+EVERYTHING ON ONE SHORTCUT
+
+Press Command K, or Control K, and start typing. Tools, saved links, widgets, the theme and every setting are one search away, so nothing is buried behind a menu you have to remember.
+
+IMAGES THAT NEVER LEAVE YOUR MACHINE
+
+Convert between JPEG, PNG and WebP, shrink something to fit a size limit, or open the editor to crop, straighten, grade the colour and add a label or an arrow. Every site that does this uploads your picture to a server first. This one does the work in your own browser, so the file stays where it is.
 
 REMINDERS THAT ACTUALLY REACH YOU
 

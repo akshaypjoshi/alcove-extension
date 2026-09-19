@@ -639,12 +639,33 @@ function WidgetsTab({ settings, update }: TabProps) {
       <div className="divide-y">
         <Row
           label="Show widgets"
-          hint="On the page: drag to move, hover to resize or remove"
+          hint="On the page: drag one onto another to stack them, hover to resize or remove"
         >
           <Switch
             checked={settings.showWidgets}
             onCheckedChange={(v) => update({ showWidgets: v })}
           />
+        </Row>
+
+        <Row
+          label="Rotate stacks"
+          hint="How often a stacked slot moves to the next widget"
+        >
+          <Select
+            value={String(settings.widgetRotate)}
+            onValueChange={(v) => update({ widgetRotate: Number(v) })}
+          >
+            <SelectTrigger size="sm" className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Never</SelectItem>
+              <SelectItem value="10">10 seconds</SelectItem>
+              <SelectItem value="20">20 seconds</SelectItem>
+              <SelectItem value="60">A minute</SelectItem>
+              <SelectItem value="300">5 minutes</SelectItem>
+            </SelectContent>
+          </Select>
         </Row>
 
         {WIDGETS.map((widget) => {

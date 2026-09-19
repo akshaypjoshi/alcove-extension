@@ -179,13 +179,20 @@ export default function ToolDock({
     <div
       className={cn(
         "glass rise fixed z-40 rounded-2xl p-2 transition-transform duration-300 ease-out",
-        dock.position === "bottom" && "bottom-5 left-1/2 -translate-x-1/2",
+        dock.position === "bottom" && "left-1/2 -translate-x-1/2",
         dock.position === "left" && "top-1/2 left-5 -translate-y-1/2",
         dock.position === "right" && "top-1/2 right-5 -translate-y-1/2",
         // Only a right-hand dock is in the drawer's way.
         dock.position === "right" && shifted && "-translate-x-[var(--drawer-shift)]",
       )}
-      style={{ animationDelay: "400ms" }}
+      style={{
+        animationDelay: "400ms",
+        // The ticker owns the bottom edge when it is on, so a bottom dock
+        // rides above it. --ticker-h is 0px whenever the strip is hidden.
+        ...(dock.position === "bottom"
+          ? { bottom: "calc(1.25rem + var(--ticker-h, 0px))" }
+          : {}),
+      }}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
     >
