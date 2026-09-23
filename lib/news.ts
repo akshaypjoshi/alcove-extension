@@ -64,11 +64,70 @@ export interface NewsItem {
  */
 function locale() {
   const tag = navigator.language || "en-US";
-  const [lang = "en", region = "US"] = tag.split("-");
-  const country = region.toUpperCase();
+  // Parsed rather than split on "-": a tag like zh-Hans-CN has a script
+  // subtag in the middle, and taking the second part as the region asked
+  // Google for edition "HANS", which is baked into the topic id below.
+  let lang = "en";
+  let country = "US";
+  try {
+    const parsed = new Intl.Locale(tag);
+    lang = parsed.language || lang;
+    country = (parsed.region || country).toUpperCase();
+  } catch {
+    const [a = "en", b = "US"] = tag.split("-");
+    lang = a;
+    country = b.toUpperCase();
+  }
   return { hl: `${lang}-${country}`, gl: country, ceid: `${country}:${lang}` };
 }
 
+/**
+ * Google's own entity id for each section, which is what the opaque topic
+ * ids are built from. Language-independent: the locale goes in separately.
+ */
+const SECTION_TOPIC: Record<string, string> = {
+  WORLD: "/m/09nm_",
+  NATION: "/m/09c7w0",
+  BUSINESS: "/m/09s1f",
+  TECHNOLOGY: "/m/07c1v",
+  SCIENCE: "/m/06mq7",
+  HEALTH: "/m/0kt51",
+  SPORTS: "/m/06ntj",
+  ENTERTAINMENT: "/m/02jjt",
+};
+
+/** One length-delimited protobuf field. ASCII only, so length is bytes. */
+function field(tag: number, text: string): string {
+  return String.fromCharCode(tag, text.length) + text;
+}
+
+/**
+ * The id in a /rss/topics/<id> URL.
+ *
+ * It is base64 protobuf wrapping a second base64 protobuf, holding the
+ * section's entity id with the language and region. Reconstructing it
+ * rather than shipping a table matters because the id differs per locale:
+ * a hardcoded set would give every user Indian or American editions.
+ *
+ * Reverse-engineered by decoding what Google's own redirects hand back,
+ * then checked against them byte for byte across four locales. Every
+ * string here is short, so each length fits the single-byte varint case.
+ */
+function topicId(path: string, hl: string, gl: string): string {
+  const body = field(0x0a, path) + field(0x12, hl) + field(0x1a, gl);
+  const inner = String.fromCharCode(0x08, 0x10, 0x12, body.length) + body + String.fromCharCode(0x28, 0x00);
+  const nested = btoa(inner).replace(/=+$/, "");
+  const mid = String.fromCharCode(0x08, 0x0a) + field(0x22, nested) + String.fromCharCode(0x50, 0x01);
+  const outer = String.fromCharCode(0x08, 0x00, 0x2a, mid.length) + mid;
+  return btoa(outer).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * `/rss/headlines/section/topic/<SECTION>` is a retired alias. It now
+ * answers a browser's request with a 403 and everything else with a
+ * redirect to the canonical URL below, which is why the built-in sections
+ * stopped loading while free-text topics carried on working.
+ */
 function feedUrl(topic: NewsTopic): string {
   const { hl, gl, ceid } = locale();
   const params = new URLSearchParams({ hl, gl, ceid });
@@ -77,7 +136,15 @@ function feedUrl(topic: NewsTopic): string {
     params.set("q", topic.value);
     return `${BASE}/search?${params}`;
   }
-  return `${BASE}/headlines/section/topic/${encodeURIComponent(topic.value)}?${params}`;
+
+  const path = SECTION_TOPIC[topic.value];
+  // A section this build does not know about is still worth a try as a
+  // search for its own name, rather than a guaranteed 404.
+  if (!path) {
+    params.set("q", topic.label || topic.value);
+    return `${BASE}/search?${params}`;
+  }
+  return `${BASE}/topics/${topicId(path, hl, gl)}?${params}`;
 }
 
 /**
@@ -150,6 +217,14 @@ function parseFeed(xml: string, topic: NewsTopic): NewsItem[] {
   return items;
 }
 
+/** Thrown for a 403 so the caller can back off rather than hammer on. */
+export class NewsBlocked extends Error {
+  constructor() {
+    super("Google News is turning requests away right now. Headlines will return on their own.");
+    this.name = "NewsBlocked";
+  }
+}
+
 async function fetchTopic(topic: NewsTopic): Promise<NewsItem[]> {
   let res: Response;
   try {
@@ -160,19 +235,57 @@ async function fetchTopic(topic: NewsTopic): Promise<NewsItem[]> {
     // tells the user nothing they can act on.
     throw new Error("Could not reach Google News. Check your connection.");
   }
+
+  // Google answers this way when it has decided the caller is asking too
+  // often, and it clears by itself. Treated as "wait", not "broken".
+  if (res.status === 403 || res.status === 429) throw new NewsBlocked();
   if (!res.ok) throw new Error(`News request failed (${res.status})`);
   return parseFeed(await res.text(), topic);
 }
 
 const MAX_ITEMS = 60;
 
-async function request(topics: NewsTopic[]): Promise<NewsItem[]> {
-  // allSettled, not all: one topic with a typo or a section Google has
-  // retired should thin the list, not blank it.
-  const results = await Promise.allSettled(topics.map(fetchTopic));
+/** Between topic requests. Six at once is what trips the block. */
+const SPACING = 400;
+
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+interface Fetched {
+  items: NewsItem[];
+  /** Google turned at least one request away, so back off even if some landed. */
+  blocked: boolean;
+}
+
+async function request(topics: NewsTopic[]): Promise<Fetched> {
+  /**
+   * One at a time, spaced out.
+   *
+   * Six simultaneous requests is exactly the shape that gets a client
+   * turned away, and six topics staggered still fill in inside a couple
+   * of seconds behind a cache that paints immediately. Settled per topic,
+   * not all-or-nothing: one topic with a typo should thin the list rather
+   * than blank it.
+   */
+  const results: PromiseSettledResult<NewsItem[]>[] = [];
+  for (const [i, topic] of topics.entries()) {
+    if (i > 0) await pause(SPACING);
+    try {
+      results.push({ status: "fulfilled", value: await fetchTopic(topic) });
+    } catch (reason) {
+      results.push({ status: "rejected", reason });
+      // Once Google is refusing, the rest of the list will be refused
+      // too. Stopping keeps a bad minute from becoming six requests that
+      // dig the hole deeper.
+      if (reason instanceof NewsBlocked) break;
+    }
+  }
 
   const merged = results.flatMap((r) =>
     r.status === "fulfilled" ? r.value : [],
+  );
+
+  const blocked = results.some(
+    (r) => r.status === "rejected" && r.reason instanceof NewsBlocked,
   );
 
   if (!merged.length) {
@@ -182,23 +295,37 @@ async function request(topics: NewsTopic[]): Promise<NewsItem[]> {
         ? reason.reason
         : new Error("Could not load the news.");
     }
-    return [];
+    return { items: [], blocked };
   }
 
   // The same story surfaces under several topics; first one wins so it
   // keeps the topic it was found under.
   const seen = new Set<string>();
-  return merged
-    .filter((item) => !seen.has(item.link) && seen.add(item.link))
-    .sort((a, b) => b.publishedAt - a.publishedAt)
-    .slice(0, MAX_ITEMS);
+  return {
+    items: merged
+      .filter((item) => !seen.has(item.link) && seen.add(item.link))
+      .sort((a, b) => b.publishedAt - a.publishedAt)
+      .slice(0, MAX_ITEMS),
+    blocked,
+  };
 }
 
 interface Cached {
   key: string;
   items: NewsItem[];
   fetchedAt: number;
+  /** Set when Google turned us away; no refresh is attempted until then. */
+  blockedUntil?: number;
 }
+
+/**
+ * How long to leave Google alone after a refusal.
+ *
+ * Every new tab reads the news, so without this a blocked user would send
+ * a fresh request every time they opened one - which is the behaviour
+ * that gets a client blocked in the first place.
+ */
+const BACKOFF = 15 * 60_000;
 
 const cacheStore = storage.defineItem<Cached | null>("local:news", {
   fallback: null,
@@ -217,6 +344,16 @@ function cacheKey(topics: NewsTopic[]): string {
 }
 
 /**
+ * Refreshes already running, keyed by topic set.
+ *
+ * Three things read the news on one page - the ticker, the widget and the
+ * tool - and each calls getNews independently. On a cold cache that was
+ * three separate runs of the same six requests, which is the very pile-up
+ * the sequential spacing was added to avoid. They share one now.
+ */
+const inFlight = new Map<string, Promise<NewsItem[] | null>>();
+
+/**
  * Stale-while-revalidate. A new tab must never wait on the network to
  * paint, so cached headlines come back immediately and `onFresh` fires
  * later if a refresh actually landed.
@@ -231,24 +368,64 @@ export async function getNews(
   const cached = await cacheStore.getValue();
   const hit = cached?.key === key ? cached : null;
 
-  const stale = !hit || Date.now() - hit.fetchedAt > TTL;
+  const now = Date.now();
+  const backedOff = hit?.blockedUntil != null && now < hit.blockedUntil;
+  const stale = !hit || now - hit.fetchedAt > TTL;
 
-  if (stale) {
+  if (stale && !backedOff) {
+    const running = inFlight.get(key);
+    if (running) {
+      // Somebody else is already asking for exactly this. Wait on theirs
+      // if we have nothing to show, otherwise paint the cache now and let
+      // their result arrive through onFresh.
+      if (!hit) return running;
+      running.then((items) => items && onFresh?.(items)).catch(() => {});
+      return hit.items;
+    }
+
     const pending = request(topics)
-      .then(async (items) => {
-        await cacheStore.setValue({ key, items, fetchedAt: Date.now() });
+      .then(async ({ items, blocked }) => {
+        await cacheStore.setValue({
+          key,
+          items,
+          fetchedAt: Date.now(),
+          // A run where one topic landed and the next was refused still
+          // means Google is turning us away. Without this the refusal was
+          // forgotten and the next tab walked straight back into it.
+          blockedUntil: blocked ? Date.now() + BACKOFF : undefined,
+        });
         return items;
       })
-      .catch((err) => {
+      .catch(async (err) => {
+        // Remember a refusal so the next new tab waits rather than asking
+        // again. The headlines already in hand are kept either way.
+        if (err instanceof NewsBlocked) {
+          await cacheStore.setValue({
+            key,
+            items: hit?.items ?? [],
+            // Kept stale on purpose: this is not a successful refresh, so
+            // the moment the backoff lapses it should try again.
+            fetchedAt: hit?.fetchedAt ?? 0,
+            blockedUntil: Date.now() + BACKOFF,
+          });
+        }
         // A failed refresh with usable headlines on hand is not an error
         // the user needs to see; a failed *first* load is.
         if (hit) return null;
         throw err;
       });
 
-    if (!hit) return pending;
-    pending.then((items) => items && onFresh?.(items)).catch(() => {});
+    const shared = pending.finally(() => inFlight.delete(key));
+    inFlight.set(key, shared);
+
+    if (!hit) return shared;
+    shared.then((items) => items && onFresh?.(items)).catch(() => {});
   }
+
+  // Backed off with nothing to show is not the same as "no news": the
+  // panel has to say why it is empty, or it silently shows a blank feed
+  // for the whole backoff and the ticker just disappears.
+  if (backedOff && !hit?.items.length) throw new NewsBlocked();
 
   return hit?.items ?? null;
 }
@@ -264,8 +441,7 @@ export async function clearNewsCache(): Promise<void> {
  * Adding a required host in an update trips Chrome's permission-increase
  * flow, which disables the extension for everyone already running it until
  * they accept a new prompt. That is a steep price for a feature not every
- * user wants, so this follows the same request-on-use shape as the on-page
- * chat launcher in lib/companion.ts.
+ * user wants, so it is requested the moment the first topic is picked.
  */
 export function hasNewsPermission(): Promise<boolean> {
   return Promise.resolve(

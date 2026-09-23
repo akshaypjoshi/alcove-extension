@@ -18,7 +18,7 @@ Language: English
 DESCRIPTION  (paste into Description*)
 ================================================================
 
-Alcove replaces the new tab page with something calmer and actually yours: your own wallpaper, the links you use, a set of small tools, and an AI chat that opens when you want it.
+Alcove replaces the new tab page with something calmer and actually yours: your own wallpaper, the links you use, and a set of small tools that open when you want them.
 
 YOUR OWN WALLPAPERS
 
@@ -38,7 +38,7 @@ Cards in the style of the ones on your phone, showing the weather, a clock in wh
 
 A DOCK OF SMALL TOOLS
 
-The everyday sort: calculators and converters, clocks and timers, reminders and notes. There are a few odds and ends for developers too. Each opens in a side drawer instead of a cramped popup, and you can switch off whatever you don't use. The dock magnifies under your pointer, and can sit along the bottom, the left or the right.
+The everyday sort: calculators and converters, clocks and timers, reminders and notes. There are a few odds and ends for developers too. Each opens in a side drawer instead of a cramped popup, and you can switch off whatever you don't use. The dock magnifies under your pointer and can sit along the bottom, the left or the right - or swap it for a grid that shows every tool by name behind one button.
 
 NEWS ON THE TOPICS YOU PICK
 
@@ -50,7 +50,11 @@ Press Command K, or Control K, and start typing. Tools, saved links, widgets, th
 
 IMAGES THAT NEVER LEAVE YOUR MACHINE
 
-Convert between JPEG, PNG and WebP, shrink something to fit a size limit, or open the editor to crop, straighten, grade the colour and add a label or an arrow. Every site that does this uploads your picture to a server first. This one does the work in your own browser, so the file stays where it is.
+Convert between JPEG, PNG and WebP, shrink something to fit a size limit, or open the editor to crop, straighten, grade the colour and add a label or an arrow. Paste a screenshot straight in. Every site that does this uploads your picture to a server first. This one does the work in your own browser, so the file stays where it is.
+
+YOUR IP, WITHOUT THE DETOUR
+
+Check the address the internet sees without opening a site that wraps it in adverts. It shows the network it belongs to and roughly where it lands, and it is the one tool here that has to ask someone else, so the panel names who.
 
 REMINDERS THAT ACTUALLY REACH YOU
 
@@ -60,10 +64,6 @@ MUSIC
 
 Add a YouTube playlist and drive it from the new tab, with cover art and the full queue. No video, and it keeps playing when you close the panel.
 
-AI CHAT WITH YOUR OWN KEY
-
-Bring a key from the provider you already use and pick a model. Replies stream in, you can stop one mid-answer, and the new tab and the side panel keep separate conversations. A local model server works too. Optionally, a launcher button on other sites.
-
 LIGHT AND DARK
 
 Follows your system by default, or pick one. Panels are translucent, and their tint follows the wallpaper rather than the theme, so they stay readable over a bright photo and over a dark one.
@@ -72,9 +72,9 @@ PRIVACY
 
 Alcove has no server and no account. There is no analytics, no telemetry, and no backend belonging to the developer, so there is nowhere for your data to be sent and none of it is collected.
 
-Your API key lives in local extension storage on your device and is deliberately kept out of browser sync. It goes to the provider you picked and nowhere else. Wallpapers and chat transcripts never leave your machine.
+Wallpapers, notes and everything the image tools touch stay on your machine. Nothing is uploaded, because there is nowhere to upload it to.
 
-Alcove asks for as little as it can up front. Reading your browsing history for the shortcut tiles is optional and requested only when you turn that row on. The chat launcher for other websites is off by default, and the access it needs is requested when you switch it on and handed back when you switch it off. A fresh install touches nothing but your new tab.
+Alcove asks for as little as it can up front. Reading your browsing history for the shortcut tiles is optional and requested only when you turn that row on, and news access is asked for when you pick your first topic. A fresh install ships with five links already in the rail, so their icons are fetched the first time you open a tab; everything else waits until you ask for it.
 
 Weather comes from Open-Meteo, which needs no account. Site icons are fetched once per site and then cached, and that can be turned off entirely.
 

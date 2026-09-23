@@ -6,8 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import ActionMenu from "@/components/newtab/ActionMenu";
-import ChatView from "@/components/chat/ChatView";
+import MusicButton from "@/components/newtab/MusicButton";
 import CommandPalette from "@/components/newtab/CommandPalette";
 import NewsTicker from "@/components/newtab/NewsTicker";
 import Clock from "@/components/newtab/Clock";
@@ -17,6 +16,8 @@ import RecentSites from "@/components/newtab/RecentSites";
 import ReminderAlert from "@/components/newtab/ReminderAlert";
 import SearchBar from "@/components/newtab/SearchBar";
 import ToolDock from "@/components/newtab/ToolDock";
+import ToolGrid from "@/components/newtab/ToolGrid";
+import ToolLauncher from "@/components/newtab/ToolLauncher";
 import ToolDrawer from "@/components/newtab/ToolDrawer";
 import WallpaperLayer from "@/components/newtab/WallpaperLayer";
 import WidgetLayer from "@/components/newtab/WidgetLayer";
@@ -24,6 +25,7 @@ import MusicDrawerBody from "@/components/music/MusicDrawerBody";
 import SettingsPanel from "@/components/settings/SettingsPanel";
 import { MusicProvider } from "@/lib/music/context";
 import { buildCommands } from "@/lib/commands";
+import { TOOLS, type ToolDef } from "@/lib/tools";
 import { getWidget } from "@/lib/widgets";
 import { runSearch } from "@/lib/search";
 import { SEARCH_ENGINES, useSettings, type Settings } from "@/lib/settings";
@@ -31,7 +33,7 @@ import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 /**
- * One drawer slot, two kinds of occupant. Chat and tools are mutually
+ * One drawer slot, two kinds of occupant. Music and tools are mutually
  * exclusive rather than stacked: they'd otherwise land on the same strip
  * of screen, and "two overlapping panels" is a worse answer than "the
  * dock stays visible so switching is one click".
@@ -55,14 +57,14 @@ function dissolve(widgets: Settings["widgets"]) {
   );
 }
 
-type Panel =
-  { kind: "chat" } | { kind: "music" } | { kind: "tool"; id: string } | null;
+type Panel = { kind: "music" } | { kind: "tool"; id: string } | null;
 
 export default function App() {
   const { settings, update } = useSettings();
   const [panel, setPanel] = useState<Panel>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   useTheme(settings?.theme);
 
@@ -73,18 +75,20 @@ export default function App() {
    */
   useEffect(() => {
     const dock = settings?.dock;
+    // In the grid layout the rail usually carries the entry point, which
+    // leaves the bottom edge empty and the widgets free to use it.
+    const occupied =
+      dock?.layout !== "grid" || !settings?.showQuickLinks;
     const clearance =
-      dock && settings?.showTools && dock.position === "bottom"
+      dock && settings?.showTools && dock.position === "bottom" && occupied
         ? `${dock.size + 32}px`
         : "0px";
     document.documentElement.style.setProperty("--dock-clearance", clearance);
-  }, [settings?.dock, settings?.showTools]);
+  }, [settings?.dock, settings?.showTools, settings?.showQuickLinks]);
 
   const panelOpen = panel !== null;
+  const gridLayout = settings?.dock.layout === "grid";
   const activeToolId = panel?.kind === "tool" ? panel.id : null;
-
-  const toggleChat = () =>
-    setPanel((current) => (current?.kind === "chat" ? null : { kind: "chat" }));
 
   const toggleMusic = () =>
     setPanel((current) =>
@@ -98,6 +102,15 @@ export default function App() {
         : { kind: "tool", id },
     );
 
+  /** Enabled tools as definitions, kept in the user's own dock order. */
+  const orderedTools = useMemo(
+    () =>
+      (settings?.enabledTools ?? [])
+        .map((id) => TOOLS.find((t) => t.id === id))
+        .filter((t): t is ToolDef => Boolean(t)),
+    [settings?.enabledTools],
+  );
+
   /**
    * Built from the live registries, so a tool or widget added anywhere
    * else turns up in the palette without a second registration. Memoised
@@ -109,7 +122,6 @@ export default function App() {
       settings
         ? buildCommands(settings, {
             openTool: (id) => setPanel({ kind: "tool", id }),
-            openChat: () => setPanel({ kind: "chat" }),
             openMusic: () => setPanel({ kind: "music" }),
             openSettings: () => setSettingsOpen(true),
             update,
@@ -155,9 +167,10 @@ export default function App() {
         return;
       }
 
-      // The palette handles its own Escape. Without this guard, dismissing
-      // it would also close whatever drawer was already open behind it.
-      if (e.key === "Escape" && !paletteOpen) setPanel(null);
+      // The palette and the tool grid handle their own Escape. Without this
+      // guard, dismissing either would also close whatever drawer was
+      // already open behind it.
+      if (e.key === "Escape" && !paletteOpen && !toolsOpen) setPanel(null);
       if (e.key === "/" && !typing) {
         e.preventDefault();
         document.querySelector<HTMLInputElement>("form input")?.focus();
@@ -165,7 +178,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [paletteOpen]);
+  }, [paletteOpen, toolsOpen]);
 
   // Render nothing rather than a default-settings flash: the wallpaper
   // swapping in a beat after paint is the most visible jank on this page.
@@ -273,29 +286,60 @@ export default function App() {
             }
             onChange={(quickLinks) => update({ quickLinks })}
             onOpenSettings={() => setSettingsOpen(true)}
+            // Only the grid layout needs a way in from here. The dock is
+            // its own way in.
+            onOpenTools={
+              settings.showTools && gridLayout
+                ? () => setToolsOpen(true)
+                : undefined
+            }
+            toolsActive={activeToolId !== null}
           />
         )}
 
-        {settings.showTools && (
-          <ToolDock
-            enabled={settings.enabledTools}
-            activeId={activeToolId}
-            onSelect={toggleTool}
-            shifted={panelOpen}
-            dock={settings.dock}
-          />
-        )}
+        {settings.showTools &&
+          (gridLayout ? (
+            <>
+              {/* The rail carries the entry point whenever it is showing;
+                  this is only for a page that has no rail. */}
+              {!settings.showQuickLinks && (
+                <ToolLauncher
+                  onOpen={() => setToolsOpen(true)}
+                  active={activeToolId !== null}
+                  shifted={panelOpen}
+                  dock={settings.dock}
+                />
+              )}
+              <ToolGrid
+                open={toolsOpen}
+                tools={orderedTools}
+                hidden={TOOLS.filter(
+                  (t) => !settings.enabledTools.includes(t.id),
+                )}
+                activeId={activeToolId}
+                onSelect={toggleTool}
+                onEnable={(id) =>
+                  update({ enabledTools: [...settings.enabledTools, id] })
+                }
+                onClose={() => setToolsOpen(false)}
+              />
+            </>
+          ) : (
+            <ToolDock
+              enabled={settings.enabledTools}
+              activeId={activeToolId}
+              onSelect={toggleTool}
+              shifted={panelOpen}
+              dock={settings.dock}
+            />
+          ))}
 
-        {/* One CTA for both panels. Two stacked pills was already the busiest
-          corner of the page, and the dock had made them read as a second,
-          competing row of controls. Shifts alongside the dock instead of
-          hiding, so you can go from a tool straight to chat. */}
-        <ActionMenu
-          active={
-            panel?.kind === "chat" || panel?.kind === "music" ? panel.kind : null
-          }
+        {/* Shifts alongside the dock rather than hiding, so music stays
+          one click away with a tool already open. */}
+        <MusicButton
+          active={panel?.kind === "music"}
           shifted={panelOpen}
-          onSelect={(id) => (id === "chat" ? toggleChat() : toggleMusic())}
+          onClick={toggleMusic}
         />
 
         <Drawer
@@ -307,19 +351,6 @@ export default function App() {
           <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
             <MusicDrawerBody />
           </div>
-        </Drawer>
-
-        <Drawer
-          open={panel?.kind === "chat"}
-          onClose={() => setPanel(null)}
-          hideClose
-        >
-          <ChatView
-            persistKey="newtab"
-            className="bg-transparent"
-            onOpenSettings={() => setSettingsOpen(true)}
-            onClose={() => setPanel(null)}
-          />
         </Drawer>
 
         <ToolDrawer toolId={activeToolId} onClose={() => setPanel(null)} />

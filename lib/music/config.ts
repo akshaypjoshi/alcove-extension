@@ -12,8 +12,9 @@
  * is free) and put its URL here. Leave it empty and the music panel says
  * YouTube isn't configured rather than failing silently.
  *
- * The host must also be allowed by `frame-src` in wxt.config.ts. The
- * wildcards there already cover github.io, pages.dev, netlify.app and
- * vercel.app.
+ * The host must also be allowed by `frame-src` in wxt.config.ts, which
+ * names this one origin literally. Point this at anywhere else and the
+ * iframe is blocked by the CSP with no error worth reading - change both
+ * together.
  */
 export const PLAYER_URL = "https://player-html-ashy.vercel.app/player.html";

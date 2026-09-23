@@ -1,9 +1,9 @@
 {
   "name": "alcove",
   "displayName": "Alcove",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "A calmer new tab, with a chat that follows you around.",
+  "description": "A calmer new tab: your own wallpaper, the links you use, and small tools.",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -23,7 +23,6 @@
     "radix-ui": "^1.6.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sonner": "^2.0.8",
     "tailwind-merge": "^3.0.0"
   },
   "devDependencies": {

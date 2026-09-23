@@ -6,6 +6,7 @@ import {
   Calculator as CalcIcon,
   Clock,
   DollarSign,
+  Globe,
   ListChecks,
   Image as ImageIcon,
   Newspaper,
@@ -19,6 +20,7 @@ import type { ComponentType } from "react";
 
 import CalculatorTool from "@/components/tools/Calculator";
 import ImagesTool from "@/components/tools/Images";
+import MyIpTool from "@/components/tools/MyIp";
 import JsonTool from "@/components/tools/JsonTool";
 import Lorem from "@/components/tools/Lorem";
 import RemindersTool from "@/components/tools/Reminders";
@@ -41,6 +43,15 @@ export interface ToolDef {
   label: string;
   description: string;
   icon: LucideIcon;
+  /**
+   * The tile colour behind the glyph.
+   *
+   * Colour is what makes a row of icons scannable: you find the timer by
+   * its orange and confirm with the glyph, rather than reading fourteen
+   * identical line drawings. Hues are kept apart from their neighbours in
+   * dock order, since adjacency is where confusion actually happens.
+   */
+  accent: string;
   Component: ComponentType;
 }
 
@@ -50,6 +61,7 @@ export const TOOLS: ToolDef[] = [
     label: "World Clock",
     description: "Times across the cities you care about",
     icon: Clock,
+    accent: "#0ea5e9",
     Component: WorldClock,
   },
   {
@@ -57,6 +69,7 @@ export const TOOLS: ToolDef[] = [
     label: "Calculator",
     description: "Expressions, functions, and a running history",
     icon: CalcIcon,
+    accent: "#3f4756",
     Component: CalculatorTool,
   },
   {
@@ -64,6 +77,7 @@ export const TOOLS: ToolDef[] = [
     label: "Units",
     description: "Length, mass, temperature, data, and more",
     icon: Ruler,
+    accent: "#14b8a6",
     Component: UnitConverter,
   },
   {
@@ -71,6 +85,7 @@ export const TOOLS: ToolDef[] = [
     label: "Currency",
     description: "Daily exchange rates, cached offline",
     icon: DollarSign,
+    accent: "#10b981",
     Component: CurrencyConverter,
   },
   {
@@ -78,6 +93,7 @@ export const TOOLS: ToolDef[] = [
     label: "Timer",
     description: "Countdown with a notification, plus a stopwatch",
     icon: TimerIcon,
+    accent: "#f97316",
     Component: TimerTool,
   },
   {
@@ -85,6 +101,7 @@ export const TOOLS: ToolDef[] = [
     label: "Reminders",
     description: "Nudge me in 20 minutes, or at 6pm",
     icon: Bell,
+    accent: "#ef4444",
     Component: RemindersTool,
   },
   {
@@ -92,6 +109,7 @@ export const TOOLS: ToolDef[] = [
     label: "To-Do List",
     description: "A short list that outlives the tab",
     icon: ListChecks,
+    accent: "#6366f1",
     Component: Todos,
   },
   {
@@ -99,6 +117,7 @@ export const TOOLS: ToolDef[] = [
     label: "Notepad",
     description: "A note that survives closing the tab",
     icon: StickyNote,
+    accent: "#eab308",
     Component: Notes,
   },
   {
@@ -106,6 +125,7 @@ export const TOOLS: ToolDef[] = [
     label: "JSON",
     description: "Format, minify, sort keys, and validate",
     icon: Braces,
+    accent: "#8b5cf6",
     Component: JsonTool,
   },
   {
@@ -113,6 +133,7 @@ export const TOOLS: ToolDef[] = [
     label: "Lorem Ipsum",
     description: "Placeholder text by paragraph, sentence, or word",
     icon: Pilcrow,
+    accent: "#78716c",
     Component: Lorem,
   },
   {
@@ -120,6 +141,7 @@ export const TOOLS: ToolDef[] = [
     label: "Color",
     description: "Convert, build a ramp, check contrast",
     icon: Palette,
+    accent: "#d946ef",
     Component: ColorTool,
   },
   {
@@ -127,6 +149,7 @@ export const TOOLS: ToolDef[] = [
     label: "Text & Dev",
     description: "Base64, hashes, case conversion, UUIDs",
     icon: Type,
+    accent: "#06b6d4",
     Component: TextTools,
   },
   {
@@ -134,6 +157,7 @@ export const TOOLS: ToolDef[] = [
     label: "News",
     description: "Headlines for the topics you follow",
     icon: Newspaper,
+    accent: "#f43f5e",
     Component: NewsTool,
   },
   {
@@ -141,7 +165,16 @@ export const TOOLS: ToolDef[] = [
     label: "Images",
     description: "Convert, resize and compress, without uploading anything",
     icon: ImageIcon,
+    accent: "#3b82f6",
     Component: ImagesTool,
+  },
+  {
+    id: "ip",
+    label: "My IP",
+    description: "The address the internet sees, and who it belongs to",
+    icon: Globe,
+    accent: "#84cc16",
+    Component: MyIpTool,
   },
 ];
 

@@ -1,7 +1,8 @@
 import { ALARM_NAME, timerStore } from "@/lib/timer";
 import { ALARM_PREFIX, remindersStore, syncAlarms } from "@/lib/reminders";
 import { notify, setBadge } from "@/lib/notify";
-import { syncCompanion } from "@/lib/companion";
+import { forgetRemovedChat } from "@/lib/settings";
+import { ALARM_NAME as TIMER_ALARM, timerStore as timer } from "@/lib/timer";
 
 export default defineBackground(() => {
   /**
@@ -9,26 +10,14 @@ export default defineBackground(() => {
    * rely on module state surviving. Every handler re-reads from storage.
    */
 
-  // Clicking the toolbar icon opens the side panel. Chrome-only API, and
-  // it has to be registered at top level - inside an onInstalled callback
-  // it silently never applies after the worker restarts.
-  browser.sidePanel
-    ?.setPanelBehavior({ openPanelOnActionClick: true })
-    .catch(() => {});
-
-  browser.commands?.onCommand.addListener(async (command) => {
-    if (command !== "open-chat") return;
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
-    try {
-      await browser.tabs.sendMessage(tab.id, { type: "tabby:toggle" });
-    } catch {
-      // No content script on this tab (chrome:// pages, the web store).
-      // The side panel works everywhere, so fall back to it.
-      if (tab.windowId != null) {
-        await browser.sidePanel?.open({ windowId: tab.windowId });
-      }
-    }
+  // Clicking the toolbar icon opens a new tab, which is Alcove. The
+  // badge on that icon still carries the reminder count.
+  // MV2 calls this browserAction, and reading only `action` meant no
+  // listener was registered at all on Firefox - a toolbar click did
+  // nothing. lib/notify.ts already handles the same split.
+  const toolbar = browser.action ?? browser.browserAction;
+  toolbar?.onClicked.addListener(() => {
+    browser.tabs.create({}).catch(() => {});
   });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {
@@ -71,30 +60,42 @@ export default defineBackground(() => {
     }
   });
 
-  browser.runtime.onInstalled.addListener(({ reason }) => {
-    // A short guided pass rather than the full settings panel. The panel
-    // is every option at once, which is the wrong first thing to hand
-    // someone who has not seen the product yet.
-    if (reason === "install") {
-      browser.tabs.create({ url: browser.runtime.getURL("/welcome.html") });
+  /**
+   * Re-arms everything Chrome drops on an update or a restart.
+   *
+   * Alarms do not survive either, and a countdown is the case that shows:
+   * its end time is still in storage, so the panel keeps counting down to
+   * zero while no alarm exists to fire the notification.
+   */
+  const rearm = async () => {
+    await syncAlarms();
+    const state = await timer.getValue();
+    if (state?.endsAt && state.endsAt > Date.now()) {
+      await browser.alarms.create(TIMER_ALARM, { when: state.endsAt });
     }
-    // Chrome drops an extension's alarms on reload/update, so pending
-    // reminders have to be re-armed from storage.
-    syncAlarms();
-    // The on-page launcher is registered at runtime, so it has to be put
-    // back after an update - and taken down if the user revoked
-    // <all_urls> from Chrome's own permissions UI.
-    syncCompanion();
+  };
+
+  browser.runtime.onInstalled.addListener(async ({ reason }) => {
+    try {
+      // A short guided pass rather than the full settings panel. The panel
+      // is every option at once, which is the wrong first thing to hand
+      // someone who has not seen the product yet.
+      if (reason === "install") {
+        await browser.tabs.create({ url: browser.runtime.getURL("/welcome.html") });
+      }
+
+      await rearm();
+      await forgetRemovedChat();
+    } catch (err) {
+      // An update handler that throws takes the rest of the update with
+      // it, and nothing here is worth losing a re-armed reminder over.
+      console.error("[alcove] update tasks failed:", err);
+    }
   });
 
   browser.runtime.onStartup.addListener(() => {
-    syncAlarms();
-    syncCompanion();
+    rearm().catch((err) => console.error("[alcove] alarm sync failed:", err));
   });
-
-  // Revoking the host permission in Chrome's UI never reaches the toggle
-  // otherwise, leaving settings claiming a feature that isn't running.
-  browser.permissions.onRemoved?.addListener(() => syncCompanion());
 
   // Clicking a reminder notification just dismisses it.
   browser.notifications.onClicked.addListener((id) => {

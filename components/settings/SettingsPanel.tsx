@@ -24,26 +24,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PROVIDER_LIST, getProvider } from "@/lib/ai/providers";
-import type { ModelInfo } from "@/lib/ai/types";
 import {
   SEARCH_ENGINES,
   WIDGET_PLACEMENTS,
+  type DockLayout,
   type DockPosition,
   type WidgetPlacement,
   type WidgetSize,
-  useApiKeys,
   useSettings,
+  LIMITS,
   type QuickLink,
   type Settings,
 } from "@/lib/settings";
 import { TOOLS } from "@/lib/tools";
-import {
-  companionEnabled,
-  disableCompanion,
-  enableCompanion,
-} from "@/lib/companion";
-import type { RecentSource } from "@/lib/recents";
+import { revokePermission, type RecentSource } from "@/lib/recents";
 import { WIDGETS, resolveConfig } from "@/lib/widgets";
 import { WIDGET_SIZE_LABEL } from "@/components/widgets/WidgetCard";
 import { searchLocations, type WeatherLocation } from "@/lib/weather";
@@ -57,6 +51,57 @@ import {
 } from "@/lib/wallpapers";
 import { cn } from "@/lib/utils";
 
+
+/**
+ * A slider that shows every step but only saves on release.
+ *
+ * Radix reports each step of a drag, and each report here is a whole
+ * settings object written to sync storage. One sweep of the dim slider is
+ * up to eighty writes against a 120-per-minute limit, and going over it
+ * fails silently: the watcher never fires, so the control springs back
+ * with no error. Holding the value locally keeps the thumb live while the
+ * write waits for the user to let go.
+ */
+function SavedSlider({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  format,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max: number;
+  step?: number;
+  format?: (value: number) => string;
+  onCommit: (value: number) => void;
+}) {
+  const [live, setLive] = useState<number | null>(null);
+  const shown = live ?? value;
+
+  return (
+    <div>
+      <Label className="text-xs">
+        {label} · {format ? format(shown) : shown}
+      </Label>
+      <Slider
+        value={[shown]}
+        min={min}
+        max={max}
+        step={step}
+        className="mt-2"
+        onValueChange={([v]) => setLive(v)}
+        onValueCommit={([v]) => {
+          setLive(null);
+          onCommit(v);
+        }}
+      />
+    </div>
+  );
+}
 
 function Row({
   label,
@@ -209,7 +254,13 @@ function AppearanceTab({ settings, update }: TabProps) {
           )}
           <Switch
             checked={settings.showRecent}
-            onCheckedChange={(v) => update({ showRecent: v })}
+            onCheckedChange={(v) => {
+              update({ showRecent: v });
+              // Switching the row off hands the permission back, rather
+              // than leaving "read your browsing history" granted for a
+              // feature that is no longer on screen.
+              if (!v) void revokePermission(settings.recentSource);
+            }}
           />
         </div>
       </Row>
@@ -221,65 +272,98 @@ function AppearanceTab({ settings, update }: TabProps) {
         />
       </Row>
 
-      <Row label="Tool dock">
+      <Row label="Tools" hint="The dock, or the grid behind one button">
         <Switch checked={settings.showTools} onCheckedChange={(v) => update({ showTools: v })} />
       </Row>
 
       {settings.showTools && (
         <div className="space-y-3 py-3">
-          <Row label="Dock position" hint="On the left, the quick links rail moves across">
+          <Row
+            label="Show as"
+            hint="A dock of icons, or one button opening a named grid"
+          >
             <Select
-              value={settings.dock.position}
+              value={settings.dock.layout}
               onValueChange={(v) =>
-                update({ dock: { ...settings.dock, position: v as DockPosition } })
+                update({ dock: { ...settings.dock, layout: v as DockLayout } })
               }
             >
               <SelectTrigger size="sm" className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="bottom">Bottom</SelectItem>
-                <SelectItem value="left">Left</SelectItem>
-                <SelectItem value="right">Right</SelectItem>
+                <SelectItem value="dock">Dock</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
               </SelectContent>
             </Select>
           </Row>
 
-          <div>
-            <Label className="text-xs">Size · {settings.dock.size}px</Label>
-            <Slider
-              value={[settings.dock.size]}
-              min={32}
-              max={64}
-              step={2}
-              className="mt-2"
-              onValueChange={([v]) => update({ dock: { ...settings.dock, size: v } })}
-            />
-          </div>
-
-          <Row label="Magnification" hint="Icons swell under the pointer">
-            <Switch
-              checked={settings.dock.magnify}
-              onCheckedChange={(v) => update({ dock: { ...settings.dock, magnify: v } })}
-            />
-          </Row>
-
-          {settings.dock.magnify && (
-            <div>
-              <Label className="text-xs">
-                Amount · {settings.dock.magnification.toFixed(2)}×
-              </Label>
-              <Slider
-                value={[settings.dock.magnification]}
-                min={1.1}
-                max={2.2}
-                step={0.05}
-                className="mt-2"
-                onValueChange={([v]) =>
-                  update({ dock: { ...settings.dock, magnification: v } })
+          {/* In the grid layout the quick links rail carries the Tools
+              entry, so there is nothing on the page for this to move. It
+              comes back only when the rail is off and the grid falls back
+              to a button of its own. */}
+          {(settings.dock.layout === "dock" || !settings.showQuickLinks) && (
+            <Row
+              label={
+                settings.dock.layout === "dock" ? "Dock position" : "Button position"
+              }
+              hint={
+                settings.dock.layout === "dock"
+                  ? "On the left, the quick links rail moves across"
+                  : "Where the Tools button sits"
+              }
+            >
+              <Select
+                value={settings.dock.position}
+                onValueChange={(v) =>
+                  update({ dock: { ...settings.dock, position: v as DockPosition } })
                 }
+              >
+                <SelectTrigger size="sm" className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bottom">Bottom</SelectItem>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </Row>
+          )}
+
+          {settings.dock.layout === "dock" && (
+            <>
+              <SavedSlider
+                label="Size"
+                value={settings.dock.size}
+                min={32}
+                max={64}
+                step={2}
+                format={(v) => `${v}px`}
+                onCommit={(size) => update({ dock: { ...settings.dock, size } })}
               />
-            </div>
+
+              <Row label="Magnification" hint="Icons swell under the pointer">
+                <Switch
+                  checked={settings.dock.magnify}
+                  onCheckedChange={(v) => update({ dock: { ...settings.dock, magnify: v } })}
+                />
+              </Row>
+
+              {settings.dock.magnify && (
+                <SavedSlider
+                  label="Amount"
+                  value={settings.dock.magnification}
+                  min={1.1}
+                  max={2.2}
+                  step={0.05}
+                  format={(v) => `${v.toFixed(2)}×`}
+                  onCommit={(magnification) =>
+                    update({ dock: { ...settings.dock, magnification } })
+                  }
+                />
+              )}
+            </>
           )}
         </div>
       )}
@@ -435,26 +519,20 @@ function WallpaperTab({ settings, update }: TabProps) {
       <Separator />
 
       <div className="space-y-3">
-        <div>
-          <Label className="text-xs">Blur · {wallpaper.blur}px</Label>
-          <Slider
-            value={[wallpaper.blur]}
-            max={24}
-            step={1}
-            className="mt-2"
-            onValueChange={([v]) => patch({ blur: v })}
-          />
-        </div>
-        <div>
-          <Label className="text-xs">Dim · {wallpaper.dim}%</Label>
-          <Slider
-            value={[wallpaper.dim]}
-            max={80}
-            step={1}
-            className="mt-2"
-            onValueChange={([v]) => patch({ dim: v })}
-          />
-        </div>
+        <SavedSlider
+          label="Blur"
+          value={wallpaper.blur}
+          max={24}
+          format={(v) => `${v}px`}
+          onCommit={(blur) => patch({ blur })}
+        />
+        <SavedSlider
+          label="Dim"
+          value={wallpaper.dim}
+          max={80}
+          format={(v) => `${v}%`}
+          onCommit={(dim) => patch({ dim })}
+        />
       </div>
     </div>
   );
@@ -606,11 +684,14 @@ function LocationPicker({ settings, update }: TabProps) {
 function WidgetsTab({ settings, update }: TabProps) {
   const instances = settings.widgets;
 
+  const full = instances.length >= LIMITS.widgets;
+
   const add = (type: string) => {
+    if (full) return;
     const def = WIDGETS.find((w) => w.type === type)!;
-    update({
+    update((current) => ({
       widgets: [
-        ...instances,
+        ...current.widgets,
         {
           id: crypto.randomUUID(),
           type,
@@ -618,7 +699,7 @@ function WidgetsTab({ settings, update }: TabProps) {
           placement: "top-right" as WidgetPlacement,
         },
       ],
-    });
+    }));
   };
 
   const remove = (id: string) =>
@@ -682,6 +763,7 @@ function WidgetsTab({ settings, update }: TabProps) {
                   size="sm"
                   variant="outline"
                   className="h-7 shrink-0"
+                  disabled={full}
                   onClick={() => add(widget.type)}
                 >
                   <Plus className="size-3.5" /> Add
@@ -881,17 +963,24 @@ function LinksTab({ settings, update }: TabProps) {
         variant="outline"
         size="sm"
         className="w-full"
+        disabled={links.length >= LIMITS.quickLinks}
         onClick={() =>
-          update({
+          update((current) => ({
             quickLinks: [
-              ...links,
+              ...current.quickLinks,
               { id: crypto.randomUUID(), title: "New link", url: "https://" },
             ],
-          })
+          }))
         }
       >
         Add link
       </Button>
+      {links.length >= LIMITS.quickLinks && (
+        <p className="text-muted-foreground text-xs">
+          That is the most that fits - settings travel through browser sync,
+          which caps one item at 8KB. Remove one to add another.
+        </p>
+      )}
     </div>
   );
 }
@@ -918,188 +1007,14 @@ function ToolsTab({ settings, update }: TabProps) {
   );
 }
 
-/**
- * The launcher needs <all_urls>, which Chrome will only grant from a user
- * gesture - so the switch calls permissions.request directly rather than
- * writing a setting that something else acts on later.
- */
-function CompanionRow() {
-  const [on, setOn] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    companionEnabled.getValue().then((v) => setOn(Boolean(v)));
-    return companionEnabled.watch((v) => setOn(Boolean(v)));
-  }, []);
-
-  const change = async (next: boolean) => {
-    setBusy(true);
-    try {
-      if (next) {
-        // Declining the prompt leaves the switch off rather than showing
-        // it on with nothing behind it.
-        const granted = await enableCompanion();
-        setOn(granted);
-      } else {
-        await disableCompanion();
-        setOn(false);
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Row
-      label="Chat on any page"
-      hint="Adds a launcher button to every site. Asks for access when you turn it on, and hands it back when you turn it off."
-    >
-      <Switch checked={on} disabled={busy} onCheckedChange={change} />
-    </Row>
-  );
-}
-
-function AiTab({ settings, update }: TabProps) {
-  const { keys, setKey } = useApiKeys();
-  const [models, setModels] = useState<ModelInfo[] | null>(null);
-  const [status, setStatus] = useState<"idle" | "checking" | "ok" | "bad">("idle");
-
-  const providerId = settings.ai.providerId;
-  const provider = PROVIDER_LIST.find((p) => p.id === providerId) ?? PROVIDER_LIST[0];
-  const key = keys[providerId] ?? "";
-
-  useEffect(() => {
-    setStatus("idle");
-    setModels(null);
-  }, [providerId]);
-
-  const check = async () => {
-    setStatus("checking");
-    const ok = await getProvider(providerId).validateKey(key);
-    setStatus(ok ? "ok" : "bad");
-    if (ok) {
-      getProvider(providerId)
-        .listModels?.(key)
-        .then(setModels)
-        .catch(() => setModels(null));
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="divide-y">
-        <CompanionRow />
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Provider</Label>
-        <Select
-          value={providerId}
-          onValueChange={(id) => {
-            const next = PROVIDER_LIST.find((p) => p.id === id)!;
-            // Ollama talks to a server on this machine, so localhost is an
-            // optional permission asked for here - inside the gesture that
-            // picked it - rather than granted to everyone at install.
-            if (id === "ollama") {
-              Promise.resolve(
-                browser.permissions.request({ origins: ["http://localhost/*"] }),
-              ).catch(() => false);
-            }
-            update({ ai: { ...settings.ai, providerId: id, model: next.defaultModel } });
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PROVIDER_LIST.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="api-key">API key</Label>
-          <a
-            href={provider.keyUrl}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs"
-          >
-            Get one <ExternalLink className="size-3" />
-          </a>
-        </div>
-        <div className="flex gap-2">
-          <Input
-            id="api-key"
-            type="password"
-            value={key}
-            placeholder={providerId === "ollama" ? "not needed for local" : "sk-…"}
-            className="font-mono"
-            onChange={(e) => {
-              setKey(providerId, e.target.value);
-              setStatus("idle");
-            }}
-          />
-          <Button variant="outline" onClick={check} disabled={status === "checking"}>
-            {status === "checking" ? <Loader2 className="size-4 animate-spin" /> : "Test"}
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          {status === "ok"
-            ? "Key works."
-            : status === "bad"
-              ? "That key was rejected."
-              : "Stored in local extension storage on this device - never synced, never sent anywhere but the provider."}
-        </p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Model</Label>
-        <Select
-          value={settings.ai.model}
-          onValueChange={(model) => update({ ai: { ...settings.ai, model } })}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="max-h-72">
-            {(models ?? provider.models).map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="system">System prompt</Label>
-        <Textarea
-          id="system"
-          value={settings.ai.systemPrompt}
-          rows={4}
-          className="text-xs"
-          onChange={(e) => update({ ai: { ...settings.ai, systemPrompt: e.target.value } })}
-        />
-      </div>
-    </div>
-  );
-}
-
-
 function AboutTab({ reset }: { reset: () => void }) {
   return (
     <div className="space-y-4 text-sm">
       <div>
         <h3 className="font-medium">Alcove</h3>
         <p className="text-muted-foreground text-xs">
-          A calmer new tab, with a chat that follows you around. Everything -
-          wallpapers, notes, links, keys - stays on your machine.
+          A calmer new tab: your own wallpaper, the links you use, and small tools. Everything -
+          wallpapers, notes, links - stays on your machine.
         </p>
       </div>
 
@@ -1107,20 +1022,12 @@ function AboutTab({ reset }: { reset: () => void }) {
 
       <dl className="text-muted-foreground space-y-1.5 text-xs">
         <div className="flex justify-between">
-          <dt>Toggle chat on any page</dt>
-          <dd className="font-mono">⌘⇧Y / Ctrl+Shift+Y</dd>
-        </div>
-        <div className="flex justify-between">
           <dt>Wallpapers &amp; notes</dt>
           <dd>IndexedDB, this device</dd>
         </div>
         <div className="flex justify-between">
           <dt>Settings &amp; links</dt>
           <dd>Browser sync storage</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt>API keys</dt>
-          <dd>Local storage, never synced</dd>
         </div>
       </dl>
 
@@ -1135,7 +1042,16 @@ function AboutTab({ reset }: { reset: () => void }) {
 
 interface TabProps {
   settings: Settings;
-  update: (patch: Partial<Settings>) => void;
+  /**
+   * A patch, or a function of the stored settings.
+   *
+   * The functional form is the only safe one when the new value is built
+   * from the old, since two patches raised from the same render both
+   * carry the same stale array.
+   */
+  update: (
+    patch: Partial<Settings> | ((current: Settings) => Partial<Settings>),
+  ) => void;
 }
 
 export default function SettingsPanel() {
@@ -1159,7 +1075,6 @@ export default function SettingsPanel() {
         <TabsTrigger value="widgets">Widgets</TabsTrigger>
         <TabsTrigger value="links">Links</TabsTrigger>
         <TabsTrigger value="tools">Tools</TabsTrigger>
-        <TabsTrigger value="ai">AI</TabsTrigger>
         <TabsTrigger value="about">About</TabsTrigger>
       </TabsList>
 
@@ -1169,7 +1084,6 @@ export default function SettingsPanel() {
         <TabsContent value="widgets"><WidgetsTab {...props} /></TabsContent>
         <TabsContent value="links"><LinksTab {...props} /></TabsContent>
         <TabsContent value="tools"><ToolsTab {...props} /></TabsContent>
-        <TabsContent value="ai"><AiTab {...props} /></TabsContent>
         <TabsContent value="about"><AboutTab reset={reset} /></TabsContent>
       </div>
     </Tabs>

@@ -1,31 +1,43 @@
 ================================================================
-CHECK THIS FIRST - the uploaded package may be stale
+CHROME WEB STORE - PRIVACY TAB ANSWERS
 ================================================================
 
-Chrome's error list asks you to justify: alarms, favicon, history,
-host permissions, notifications, remote code, search, sidePanel,
-storage, topSites, unlimitedStorage.
+Written against version 1.0.0. Check this still matches the package
+you are uploading before you paste any of it: the point of these
+answers is that they describe the zip in the dashboard, and an
+answer that describes a different build is an inaccurate-disclosure
+rejection, not a typo.
 
-It does NOT ask about "scripting" - and your current build declares
-it. That suggests the package in the dashboard predates the
-single-purpose fix, i.e. it still contains the <all_urls> content
-script that was the main rejection risk.
-
-Open the Package tab and check the permission list. If "scripting"
-is absent, re-upload .output/alcove-0.1.0-chrome.zip before filling
-anything below in. That build has:
+Quick check against .output/chrome-mv3/manifest.json for 1.0.0:
 
   permissions      storage, unlimitedStorage, alarms, notifications,
-                   search, scripting, sidePanel, favicon
-  content_scripts  none
-  optional hosts   <all_urls>, http://localhost/*
+                   search, favicon
+  host permissions open.er-api.com, api.open-meteo.com,
+                   geocoding-api.open-meteo.com,
+                   www.google.com/s2/favicons, icons.duckduckgo.com,
+                   www.youtube.com
+  optional         history, topSites
+  optional hosts   news.google.com
+  content scripts  none
+  <all_urls>       nowhere in the manifest
+
+If the dashboard shows scripting, sidePanel, or any of
+api.anthropic.com / api.openai.com / openrouter.ai, you are looking
+at a package from 0.2.0 or earlier. Those belonged to an AI chat
+feature that was removed before 1.0.0. Upload the current zip first.
+
+This file used to have a twin, privacy-fields.txt, saying the same
+things in a different order. They drifted apart and both went stale.
+One file now.
 
 
 ================================================================
 SINGLE PURPOSE
 ================================================================
 
-Alcove replaces Chrome's new tab page with a customisable start page: a wallpaper, a clock, a search box, shortcut tiles, widgets, and a set of small utilities, plus an AI chat panel the user opens themselves.
+Alcove replaces Chrome's new tab page with a customisable start
+page: a wallpaper, a clock, a search box, shortcut tiles, widgets,
+and a set of small utilities the user opens from a dock or a grid.
 
 
 ================================================================
@@ -33,43 +45,73 @@ PERMISSION JUSTIFICATIONS  (one field each)
 ================================================================
 
 storage
-Stores the user's own settings - layout, theme, wallpaper choice, quick links, widget placement, and which tools are enabled - so their new tab looks the same each time it opens.
+Stores the user's own settings - layout, theme, wallpaper choice,
+quick links, widget placement, and which tools are enabled - so their
+new tab looks the same each time it opens.
 
 unlimitedStorage
-Wallpapers are images the user uploads, kept in IndexedDB on their device. A small library of photos exceeds the default storage quota, and exceeding it would silently fail to save the user's own image.
+Wallpapers are images the user uploads, kept in IndexedDB on their
+device. A small library of photos exceeds the default storage quota,
+and exceeding it would silently fail to save the user's own image.
 
 alarms
-Schedules the reminders and countdown timers the user creates. An alarm is the only timer that survives the service worker being suspended; a setTimeout would be discarded and the reminder would never fire.
+Schedules the reminders and countdown timers the user creates. An
+alarm is the only timer that survives the service worker being
+suspended; a setTimeout would be discarded and the reminder would
+never fire.
 
 notifications
-Displays the reminder or timer message at the moment it fires. Used only for reminders and timers the user set themselves.
+Displays the reminder or timer message at the moment it fires. Used
+only for reminders and timers the user set themselves.
 
 search
-Runs the query the user types in the new tab's search box through their own default search engine, instead of navigating to a hard-coded engine URL.
-
-scripting
-Registers the optional on-page chat launcher at runtime, and only after the user switches it on in settings and grants access. Nothing is injected into any page until then, and unregistering happens as soon as they switch it off.
-
-sidePanel
-Opens the extension's chat panel in Chrome's side panel when the user clicks the toolbar icon or uses the keyboard shortcut.
+Runs the query the user types in the new tab's search box through
+their own default search engine, instead of navigating to a
+hard-coded engine URL.
 
 favicon
-Reads Chrome's local favicon cache to draw icons for the user's saved quick links, so their list of links never has to be sent to a third-party icon service.
+Reads Chrome's local favicon cache to draw icons for the user's saved
+quick links, so their list of links never has to be sent to a
+third-party icon service.
 
 history
-Optional and off by default. When the user switches on the shortcut tile row, this reads their recently visited pages to draw those tiles. The titles and addresses are displayed on the user's own new tab and are never transmitted anywhere.
+Optional and off by default. When the user switches on the shortcut
+tile row, this reads their recently visited pages to draw those
+tiles. The titles and addresses are displayed on the user's own new
+tab and are never transmitted anywhere.
 
 topSites
-Optional and off by default. An alternative source for the same shortcut tile row, selected by the user in settings, showing their most visited sites instead of the most recent.
+Optional and off by default. An alternative source for the same
+shortcut tile row, selected by the user in settings, showing their
+most visited sites instead of the most recent.
 
 host permissions  (one combined field)
-Alcove contacts only the services required by features the user has chosen, directly from the extension's own page:
-- api.anthropic.com, api.openai.com, openrouter.ai: sends the user's chat messages to whichever AI provider they configured, authenticated with the user's own API key.
-- api.open-meteo.com, geocoding-api.open-meteo.com: forecast and city lookup for the weather widget. No account or API key is involved.
-- open.er-api.com: current exchange rates for the currency converter tool.
-- www.google.com/s2/favicons, icons.duckduckgo.com: fetches an icon for a site the user saved as a quick link, once per hostname and then cached locally. Only the site's origin is ever sent, never a path or query, and this can be switched off in settings.
-- www.youtube.com: reads public oEmbed data to show track titles for a playlist the user added.
-Two origins are optional and requested only in context: <all_urls> if the user turns on the on-page chat launcher (revoked when they turn it off), and http://localhost/* if they select a local Ollama server as their AI provider.
+Alcove contacts only the services required by features the user has
+chosen, directly from the extension's own page. There is no server
+belonging to the developer, so nothing is proxied or collected.
+- api.open-meteo.com, geocoding-api.open-meteo.com: forecast and city
+  lookup for the weather widget. No account or API key is involved.
+- open.er-api.com: current exchange rates for the currency converter
+  tool, cached for a day.
+- www.google.com/s2/favicons, icons.duckduckgo.com: fetches an icon
+  for a site the user saved as a quick link, once per hostname and
+  then cached locally. Only the site's origin is ever sent, never a
+  path or query, and this can be switched off in settings.
+- www.youtube.com: reads public oEmbed data to show track titles for
+  a playlist the user added.
+One origin is optional and requested in context: news.google.com,
+asked for when the user picks their first news topic and handed back
+when they remove their last one.
+
+Two further hosts are contacted by the My IP tool and are
+deliberately NOT in the manifest, because both answer with
+Access-Control-Allow-Origin: * and need no host permission:
+- ipwho.is: reports back the public IP address the connection came
+  from, with the city and network operator it maps to.
+- api.ipify.org: reports the IPv4 address, and is asked only when the
+  connection reached the first service over IPv6.
+Both are contacted only while that tool is open, carry no account or
+key, and send nothing about the user beyond the request itself.
 
 
 ================================================================
@@ -106,27 +148,21 @@ DATA USAGE DISCLOSURES
 
 Tick:
 
-  Authentication information
-    The AI provider API key the user enters. Kept in local extension
-    storage on their device, excluded from sync, and sent only to the
-    provider they chose.
-
   Web history
     Only if you keep the shortcut tile row. Read on the device to
     draw the tiles; never transmitted.
 
-Two judgment calls - I would tick both, because over-disclosing
-costs nothing and under-disclosing is a policy violation:
-
   Location
-    The weather widget sends the coordinates of a city the user
-    picked to Open-Meteo. It is user-chosen, not device location,
-    but it is still location data leaving the machine.
+    Two features, both user-initiated. The weather widget sends the
+    coordinates of a city the user picked to Open-Meteo. The My IP
+    tool receives back the city and network its lookup service reads
+    from the connection. Neither uses the device's location API, but
+    both are location data crossing the wire, so tick it.
 
-  Personal communications
-    Arguable. Chat messages go to the AI provider the user
-    configured. They are prompts rather than correspondence with
-    another person, so this is defensible either way.
+Do NOT tick Authentication information or Personal communications.
+Both applied to the AI chat removed before 1.0.0: there is no API key to
+store and no message sent to any model provider. Leaving them ticked
+would declare collection this package does not perform.
 
 Then tick all three certifications - all three are true of this
 extension:
@@ -144,6 +180,8 @@ LAST TWO
 
 Privacy policy URL
   Needs privacy/index.html deployed first, then paste the URL here.
+  Redeploy it for this release: the 1.0.0 policy drops the AI rows
+  and adds the My IP lookup.
 
 Publisher contact email
   This one is not on the item page. Go to the developer dashboard

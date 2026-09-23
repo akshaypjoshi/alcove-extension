@@ -9,7 +9,6 @@ import {
   Music,
   Search,
   Settings2,
-  Sparkles,
   Sun,
 } from "lucide-react";
 import { TOOLS } from "@/lib/tools";
@@ -36,7 +35,6 @@ export interface Command {
 
 export interface CommandActions {
   openTool: (id: string) => void;
-  openChat: () => void;
   openMusic: () => void;
   openSettings: () => void;
   addWidget: (type: string) => void;
@@ -51,15 +49,6 @@ export function buildCommands(
   const commands: Command[] = [];
 
   commands.push(
-    {
-      id: "ask",
-      label: "Ask",
-      hint: "Open the chat panel",
-      group: "Actions",
-      icon: Sparkles,
-      keywords: "ai chat claude gpt question",
-      run: actions.openChat,
-    },
     {
       id: "music",
       label: "Music",

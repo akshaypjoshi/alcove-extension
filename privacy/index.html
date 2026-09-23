@@ -165,7 +165,7 @@
 
   <section>
     <h2>What Alcove is</h2>
-    <p>Alcove replaces Chrome's new tab page with a customisable start page: a wallpaper, clock, search box, shortcuts, widgets and a set of small utilities, plus an optional AI chat panel you open yourself. This policy covers the Alcove browser extension only.</p>
+    <p>Alcove replaces Chrome's new tab page with a customisable start page: a wallpaper, clock, search box, shortcuts, widgets and a set of small utilities. This policy covers the Alcove browser extension only.</p>
   </section>
 
   <section>
@@ -178,11 +178,10 @@
         </thead>
         <tbody>
           <tr><th scope="row">Settings</th><td>Chrome sync storage</td><td>Layout, wallpaper choice, widgets, quick links, display name, weather location, chosen search engine.</td></tr>
-          <tr><th scope="row">Music playlists</th><td>Chrome sync storage</td><td>The YouTube playlist links you add.</td></tr>
-          <tr><th scope="row">AI provider API keys</th><td>Local storage, this device only</td><td>Authenticating to the AI provider you chose. Deliberately excluded from sync.</td></tr>
-          <tr><th scope="row">Chat transcripts</th><td>Local storage, this device only</td><td>So a conversation is still there when you reopen the panel. The most recent 40 messages are kept.</td></tr>
+          <tr><th scope="row">Music playlists</th><td>Chrome sync storage</td><td>The YouTube playlist links you add. Which one is currently selected stays on this device.</td></tr>
           <tr><th scope="row">Wallpapers</th><td>IndexedDB, this device only</td><td>The images you upload. They are never transmitted anywhere.</td></tr>
           <tr><th scope="row">Site icons</th><td>IndexedDB, this device only</td><td>Cached shortcut icons, so each is fetched at most once.</td></tr>
+          <tr><th scope="row">Notepad and To-Do List</th><td>Local storage, this device only</td><td>The note you type and the items on your list. Never transmitted.</td></tr>
           <tr><th scope="row">Reminders and timer</th><td>Local storage, this device only</td><td>So they still fire after the browser restarts.</td></tr>
           <tr><th scope="row">News topics</th><td>Chrome sync storage</td><td>The sections and keywords you chose to follow.</td></tr>
           <tr><th scope="row">Cached headlines</th><td>Local storage, this device only</td><td>So a new tab paints without waiting on the network. Cleared when you remove your last topic.</td></tr>
@@ -191,7 +190,7 @@
       </table>
     </div>
     <div class="flag">
-      <p><strong>About Chrome sync.</strong> The two rows marked <em>sync storage</em> are handled by Chrome's own sync, which means that if you have Chrome Sync switched on they travel through your Google account to your other signed-in devices, under Google's privacy policy rather than ours. That includes the quick links you save, your display name and your weather location. Your API keys, chat transcripts and wallpapers are stored locally precisely so they never do this.</p>
+      <p><strong>About Chrome sync.</strong> The three rows marked <em>sync storage</em> are handled by Chrome's own sync, which means that if you have Chrome Sync switched on they travel through your Google account to your other signed-in devices, under Google's privacy policy rather than ours. That includes the quick links you save, your display name, your weather location and the news topics you follow. Your wallpapers, notes and cached data are stored locally precisely so they never do this.</p>
     </div>
   </section>
 
@@ -204,12 +203,12 @@
           <tr><th scope="col">Service</th><th scope="col">What is sent</th><th scope="col">When</th></tr>
         </thead>
         <tbody>
-          <tr><th scope="row">Your chosen AI provider<br><span style="font-weight:400;color:var(--muted)">Anthropic, OpenAI, OpenRouter, or a local Ollama server</span></th><td>The messages you type, your system prompt, and your own API key.</td><td>Only when you send a chat message.</td></tr>
           <tr><th scope="row">Open-Meteo</th><td>The coordinates of the location you chose, and the text you type when searching for a city. No key or account.</td><td>When a weather widget is on screen.</td></tr>
           <tr><th scope="row">er-api.com</th><td>Nothing identifying - a request for current exchange rates.</td><td>When you open the currency converter.</td></tr>
-          <tr><th scope="row">Google and DuckDuckGo icon services</th><td>The origin of a site you saved as a shortcut - never the page path or query.</td><td>Once per hostname, then cached. Can be switched off in Settings.</td></tr>
+          <tr><th scope="row">Google and DuckDuckGo icon services</th><td>The origin of a site in your quick links - never the page path or query. A fresh install ships with five links already in the rail, so this happens for those too, before you have added any of your own.</td><td>Once per hostname, then cached. Can be switched off in Settings.</td></tr>
           <tr><th scope="row">YouTube<br><span style="font-weight:400;color:var(--muted)">including the playback relay page</span></th><td>The playlist and video IDs from playlists you added, to read public track titles and load cover art and the player.</td><td>When you use the music panel.</td></tr>
           <tr><th scope="row">Google News</th><td>The name of a section you picked, or a keyword you typed, as a request for that feed. No account, no identifier, and nothing about you.</td><td>Only if you add a news topic, and at most once every 20 minutes per topic.</td></tr>
+          <tr><th scope="row">ipwho.is and ipify<br><span style="font-weight:400;color:var(--muted)">used by the My IP tool</span></th><td>Nothing but the request itself. Your public IP address is what those services read from the connection and report back to you, along with the city and provider it maps to. No account, no key.</td><td>Only while the My IP tool is open.</td></tr>
           <tr><th scope="row">Your default search engine</th><td>The text you type in the search box.</td><td>When you search. Alcove hands the query to your browser, which navigates as it would from the address bar.</td></tr>
         </tbody>
       </table>
@@ -247,7 +246,7 @@
 
   <section>
     <h2>Deleting your data</h2>
-    <p>Removing Alcove from Chrome deletes everything it stored on your device, including wallpapers, API keys and chat transcripts. Individual items can be cleared sooner: Settings has a reset, chat has a "new chat" button, and saved API keys can be deleted there. Anything already synced through your Google account is cleared by removing the extension while signed in, or through Google's own controls.</p>
+    <p>Removing Alcove from Chrome deletes everything it stored on your device, including wallpapers, notes and cached headlines. Individual items can be cleared sooner: Settings has a reset, and each tool clears its own data. Anything already synced through your Google account is cleared by removing the extension while signed in, or through Google's own controls.</p>
   </section>
 
   <section>

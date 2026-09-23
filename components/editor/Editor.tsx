@@ -84,6 +84,11 @@ export default function Editor() {
   const [depth, setDepth] = useState({ past: 0, future: 0 });
   const [leaving, setLeaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  /** Mirrors `bitmap` so cleanup can reach it without re-running on change. */
+  const bitmapRef = useRef<ImageBitmap | null>(null);
+  /** How deep the history was when the file was last written out. */
+  const savedAt = useRef(0);
+  const [dirty, setDirty] = useState(false);
 
   /**
    * History.
@@ -112,7 +117,10 @@ export default function Editor() {
     setStateRaw(next);
   }, []);
 
-  const syncDepth = () => setDepth({ past: past.current.length, future: future.current.length });
+  const syncDepth = () => {
+    setDepth({ past: past.current.length, future: future.current.length });
+    setDirty(past.current.length !== savedAt.current);
+  };
 
   const preview = useCallback(
     (next: EditState) => {
@@ -166,19 +174,34 @@ export default function Editor() {
     syncDepth();
   }, [settle, show]);
 
+  /** Counts opens, so a slow decode cannot replace a newer picture. */
+  const openSeq = useRef(0);
+
   const load = useCallback(
     async (blob: Blob, label: string) => {
+      const seq = ++openSeq.current;
       try {
         const file = blob instanceof File ? blob : new File([blob], label, { type: blob.type });
         const decoded = await decode(file);
-        setBitmap((old) => {
-          old?.close();
-          return decoded;
-        });
+
+        // Open A then B, and if A decodes last it used to win: it closed
+        // B's bitmap - the one on screen - and showed A under B's name.
+        if (seq !== openSeq.current) {
+          decoded.close();
+          return;
+        }
+
+        // Closing the old bitmap outside the updater on purpose. React
+        // runs updaters twice in development, and a side effect in one
+        // runs twice with it.
+        bitmapRef.current?.close();
+        bitmapRef.current = decoded;
+        setBitmap(decoded);
         setName(label);
         baseRef.current = null;
         past.current = [];
         future.current = [];
+        savedAt.current = 0;
         show(INITIAL_STATE);
         syncDepth();
         setSelectedId(null);
@@ -198,6 +221,24 @@ export default function Editor() {
     },
     [show],
   );
+
+  // An ImageBitmap holds real memory outside the JS heap, and a 12MP
+  // photo is hundreds of megabytes of it. Nothing else frees it.
+  useEffect(() => () => bitmapRef.current?.close(), []);
+
+  /**
+   * Closing the tab with work in it.
+   *
+   * The X button asks first, but Cmd+W went straight past that. The
+   * browser's own prompt is the only thing that can interrupt it, and it
+   * is only allowed to appear when there is genuinely something to lose.
+   */
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   // Opened from the Images tool: the blob came through IndexedDB and the
   // id rode in the URL, because two documents cannot share a File.
@@ -383,6 +424,11 @@ export default function Editor() {
         quality: supportsQuality(format) ? quality : undefined,
       });
       download(blob, renameFor(name, format));
+      // Mark this point as saved rather than clearing the history: the
+      // work is out, so leaving loses nothing, but undo should still
+      // reach back past the export.
+      savedAt.current = past.current.length;
+      setDirty(false);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "The export failed.");
@@ -416,9 +462,9 @@ export default function Editor() {
 
   const requestClose = () => {
     finishEditing();
-    // Only edits that reached history count: an untouched image, or one only
-    // panned around, should not nag on the way out.
-    if (depth.past > 0) setLeaving(true);
+    // Only unsaved edits count: an untouched image, or one already
+    // written out, should not nag on the way out.
+    if (dirty) setLeaving(true);
     else void close();
   };
 

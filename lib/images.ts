@@ -1,4 +1,4 @@
-import { createStore, del, get, set } from "idb-keyval";
+import { createStore, del, get, keys, set } from "idb-keyval";
 import { objectUrl } from "@/lib/wallpapers";
 
 /**
@@ -283,11 +283,39 @@ const handoffStore = createStore("alcove-handoff", "files");
 
 export async function stageForEditor(blob: Blob, name: string): Promise<string> {
   const id = crypto.randomUUID();
+  // Clear anything a previous attempt abandoned before adding to it.
+  await sweepHandoff();
   await set(id, { blob, name, at: Date.now() }, handoffStore);
   return id;
 }
 
 /** Reads once and deletes, so a refresh cannot resurrect a stale image. */
+/**
+ * How long a staged image may sit unread before it is swept.
+ *
+ * The editor deletes the record as soon as it reads it, so anything older
+ * than this was staged for a page that never opened - a blocked popup, a
+ * tab closed on the way, a mind changed. Without a sweep those blobs are
+ * full-size PNGs that nothing will ever collect, under a permission that
+ * tells the browser not to reclaim them.
+ */
+const STALE_HANDOFF = 60 * 60_000;
+
+async function sweepHandoff(): Promise<void> {
+  try {
+    const now = Date.now();
+    const ids = await keys(handoffStore);
+    for (const id of ids) {
+      const record = await get<{ at?: number }>(id as string, handoffStore);
+      if (!record?.at || now - record.at > STALE_HANDOFF) {
+        await del(id as string, handoffStore);
+      }
+    }
+  } catch {
+    // A sweep that fails is not worth failing the handoff over.
+  }
+}
+
 export async function takeStaged(
   id: string,
 ): Promise<{ blob: Blob; name: string } | null> {

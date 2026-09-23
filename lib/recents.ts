@@ -43,6 +43,22 @@ export async function requestPermission(source: RecentSource): Promise<boolean> 
   }
 }
 
+/**
+ * Hands the permission back when the row is switched off.
+ *
+ * News already does this, and the asymmetry was not deliberate: leaving
+ * "Read your browsing history" granted for a feature the user has turned
+ * off is exactly the sort of lingering grant the request-on-use design
+ * exists to avoid.
+ */
+export async function revokePermission(source: RecentSource): Promise<void> {
+  try {
+    await browser.permissions.remove({ permissions: PERMISSIONS[source] });
+  } catch {
+    // Firefox can refuse to drop a permission. The row is off either way.
+  }
+}
+
 /** Pages worth showing: not the browser's own furniture, not this tab. */
 function isUsable(url: string): boolean {
   return /^https?:\/\//i.test(url);

@@ -106,6 +106,16 @@ export default function Canvas({
 
   const measure = sharedMeasure();
   const out = outputSize(bitmap, state);
+  /**
+   * The wrapper has not been measured yet.
+   *
+   * `box` starts at zero, and `0 / out.width` is falsy, so the `|| 1`
+   * fallbacks below would read that as "fits at full size" - allocating a
+   * backing store the size of the whole photo for the one frame before
+   * the ResizeObserver reports. On a 4032x3024 phone picture at dpr 2
+   * that is around 195MB, painted once and thrown away.
+   */
+  const measured = box.width > 0 && box.height > 0;
   // Never upscale: a small image blown up to fill the page just looks
   // broken, and the export is unaffected either way.
   const fitScale = Math.min(1, box.width / out.width || 1, box.height / out.height || 1);
@@ -135,18 +145,18 @@ export default function Canvas({
   useEffect(() => {
     const canvas = baseRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx || !measured) return;
     canvas.width = Math.round(cssWidth * dpr);
     canvas.height = Math.round(cssHeight * dpr);
     const shown: EditState = draft ? { ...state, layers: [...state.layers, draft] } : state;
     render(ctx, bitmap, shown, fitScale * dpr, editingId);
-  }, [bitmap, state, draft, editingId, cssWidth, cssHeight, fitScale, dpr]);
+  }, [bitmap, state, draft, editingId, cssWidth, cssHeight, fitScale, dpr, measured]);
 
   // Outline, handles, and the crop rectangle while it is being dragged.
   useEffect(() => {
     const canvas = overlayRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx || !measured) return;
     canvas.width = Math.round(cssWidth * dpr);
     canvas.height = Math.round(cssHeight * dpr);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -216,7 +226,7 @@ export default function Canvas({
       ctx.lineWidth = 1.5 * px;
       ctx.strokeRect(cropDraft.x, cropDraft.y, cropDraft.w, cropDraft.h);
     }
-  }, [bitmap, state, selected, editing, cropDraft, cssWidth, cssHeight, fitScale, dpr, measure]);
+  }, [bitmap, state, selected, editing, cropDraft, cssWidth, cssHeight, fitScale, dpr, measure, measured]);
 
   // A label opened for editing takes the keyboard at once, caret at the end.
   useEffect(() => {
@@ -237,18 +247,32 @@ export default function Canvas({
     );
   };
 
+  /**
+   * Follows a drag on the window, so it keeps working past the canvas.
+   *
+   * `pointercancel` ends it too. Without that, a gesture the browser takes
+   * away - a touch turning into a scroll, a window losing the pointer -
+   * left the move listener attached with no pointerup ever coming, and it
+   * then measured a canvas that may no longer be there.
+   */
   const track = (
     onMove: (p: Point, ev: PointerEvent) => void,
     onUp: () => void,
   ) => {
-    const move = (ev: PointerEvent) => onMove(toPoint(ev.clientX, ev.clientY), ev);
-    const up = () => {
+    const move = (ev: PointerEvent) => {
+      if (!baseRef.current) return stop();
+      onMove(toPoint(ev.clientX, ev.clientY), ev);
+    };
+    const stop = () => {
       window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
       onUp();
     };
     window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    return stop;
   };
 
   const replace = (layers: Layer[], layer: Layer) =>
@@ -340,17 +364,30 @@ export default function Canvas({
         },
         () => {
           setCropDraft(null);
-          // A stray click should not crop the image down to nothing.
-          if (rect.w > 8 && rect.h > 8) {
-            onCommit({
-              ...state,
-              crop: {
-                x: Math.max(0, Math.round(rect.x)),
-                y: Math.max(0, Math.round(rect.y)),
-                w: Math.min(bitmap.width, Math.round(rect.w)),
-                h: Math.min(bitmap.height, Math.round(rect.h)),
-              },
-            });
+          /**
+           * Intersected with the image, not clamped against it.
+           *
+           * The drag is tracked on the window, so it readily runs past
+           * the edge. Clamping each side on its own moved the rectangle
+           * instead of trimming it: a drag starting off the left edge
+           * committed a crop shifted right of the one just drawn, and one
+           * running off the right committed a box wider than what was
+           * left of the image, which exports as a transparent band.
+           */
+          const span = (from: number, size: number, limit: number) => {
+            const lo = Math.min(Math.max(0, Math.round(from)), limit);
+            const hi = Math.min(Math.max(0, Math.round(from + size)), limit);
+            return { at: lo, size: hi - lo };
+          };
+          const x = span(rect.x, rect.w, bitmap.width);
+          const y = span(rect.y, rect.h, bitmap.height);
+          const crop = { x: x.at, y: y.at, w: x.size, h: y.size };
+
+          // A stray click, or a drag that ended up almost entirely off the
+          // image, should not crop it down to nothing. Measured on screen
+          // so the threshold means the same on a phone photo as a thumbnail.
+          if (crop.w > 8 * unit && crop.h > 8 * unit) {
+            onCommit({ ...state, crop });
           }
         },
       );

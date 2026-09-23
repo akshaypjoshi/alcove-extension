@@ -6,9 +6,8 @@
 
 **A quiet corner of your browser.**
 
-Your own wallpapers, the links you actually use, a dock of small tools,
-and a bring-your-own-key AI chat - on the new tab, in the side panel,
-and on any page.
+Your own wallpapers, the links you actually use, and a dock of small
+tools - on every new tab.
 
 <p>
   <img alt="Manifest V3" src="https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white">
@@ -29,9 +28,9 @@ and on any page.
 |  |  |
 |---|---|
 | <img src="docs/screenshots/tools-dock.jpg" alt="World Clock open in the drawer, with the dock magnifying under the pointer"> | <img src="docs/screenshots/music.jpg" alt="The music drawer with a YouTube playlist queued"> |
-| **Tools in a drawer.** The dock magnifies under the pointer like the macOS one; tools and chat share a single panel. | **Music without video.** A YouTube playlist, cover art and a queue - playback survives closing the drawer. |
-| <img src="docs/screenshots/action-menu.jpg" alt="The circular action button expanded into Ask and Music"> | <img src="docs/screenshots/settings.jpg" alt="The settings dialog over a blurred new tab"> |
-| **One button, two panels.** A circular CTA fans out into Ask and Music instead of stacking pills in the corner. | **Everything is a setting.** Glass panels tint to the wallpaper's measured luminance, not the UI theme. |
+| **Tools in a drawer.** The dock magnifies under the pointer like the macOS one, or collapses into a labelled grid. | **Music without video.** A YouTube playlist, cover art and a queue - playback survives closing the drawer. |
+| <img src="docs/screenshots/action-menu.jpg" alt="The music button in the corner of the new tab"> | <img src="docs/screenshots/settings.jpg" alt="The settings dialog over a blurred new tab"> |
+| **Music in the corner.** One circular button, out of the way until you want it. | **Everything is a setting.** Glass panels tint to the wallpaper's measured luminance, not the UI theme. |
 
 ---
 
@@ -48,17 +47,16 @@ To load a production build by hand: `chrome://extensions` → enable Developer
 mode → **Load unpacked** → pick `.output/chrome-mv3`.
 
 **Firefox:** `pnpm dev:firefox` / `pnpm build:firefox`. Everything works except
-the side panel and the new-tab override, neither of which Firefox supports the
-same way - the floating chat and the tools are unaffected.
+the new-tab override, which Firefox does not support the same way - the tools
+are unaffected.
 
 ## Where it shows up
 
 | Surface | What's there |
 |---|---|
 | **First run** | a three step pass: wallpaper, links, name and tools |
-| **New tab** | clock, greeting, search, shortcut tiles, quick-link rail, tool dock, widgets, chat |
-| **Side panel** | the same chat, docked - toolbar icon, or `⌘⇧Y` / `Ctrl+Shift+Y` |
-| **Any page** | an opt-in launcher button that opens the chat in a floating panel |
+| **New tab** | clock, greeting, search, shortcut tiles, quick-link rail, tools, widgets, news |
+| **Image editor** | a full page of its own, opened from the Images tool or the palette |
 | **Options page** | all settings, also reachable from the new tab |
 
 ---
@@ -102,20 +100,16 @@ your world-clock zones; *Weather* is Open-Meteo (free, keyless); *Music* shows
 what's playing.
 
 **Tools.** World Clock, Calculator, Units, Currency, Timer + stopwatch,
-Reminders, To-Do List, Notepad, JSON, Lorem Ipsum, Colour, and a Text & Dev
-toolbox (Base64, URL, SHA-256, case conversion, UUIDs). Toggle any of them in
-Settings → Tools.
+Reminders, To-Do List, Notepad, JSON, Lorem Ipsum, Colour, a Text & Dev
+toolbox (Base64, URL, SHA-256, case conversion, UUIDs), News, Images and My
+IP. Toggle any of them in Settings → Tools, and choose between the dock and a
+labelled grid.
 
-**Chat.** Anthropic, OpenAI, OpenRouter, or a local Ollama. Streaming, a stop
-button, per-surface transcripts, and a model list fetched live from whichever
-provider you picked.
-
-The on-page launcher is **off by default**. `<all_urls>` is the heaviest thing
-this extension could ask for, so the content script isn't in the manifest at
-all - it's registered at runtime by `lib/companion.ts` once you switch
-*Settings → AI → Chat on any page* on and Chrome grants the permission.
-Switching it off unregisters the script and hands the permission back. A fresh
-install is a pure new-tab replacement, and the install prompt says so.
+**Images.** Convert between PNG, JPEG and WebP, resize by edge or to a byte
+budget, and edit: crop, rotate, straighten, colour grading, text, arrows and
+freehand. Every object stays selectable and re-editable, and the export runs
+the same render function as the preview at scale 1. Nothing is uploaded -
+there is no server to upload to.
 
 **First run.** Installing opens `welcome.html`, not the settings panel. The
 panel is every option at once, which reads as assembly required to someone who
@@ -286,8 +280,7 @@ on every unrelated re-render while you were reading it.
 
 **JSON, Text & Dev and Notepad** override the shadcn `Textarea`'s
 `field-sizing-content` with `field-sizing-fixed`. Content sizing grows the box
-to fit its value, which is right for the chat composer and catastrophic for a
-few hundred kB of pasted JSON - the textarea becomes thousands of pixels tall
+to fit its value, which is catastrophic for a few hundred kB of pasted JSON - the textarea becomes thousands of pixels tall
 and pushes everything below it out of the panel instead of scrolling.
 
 **Widgets snap to anchors, not x/y.** Absolute positions would need collision
@@ -300,41 +293,20 @@ vertically centred, and a stacked column in any corner runs straight into them.
 
 ---
 
-## Bring your own key
-
-Settings → AI. Keys go in `chrome.storage.local` - **not** `sync`, because sync
-storage isn't encrypted and a key silently replicating to every machine you're
-signed into isn't a property anyone asked for. They're sent to your chosen
-provider and nowhere else.
-
-Requests go directly from an extension-origin page to the provider. For
-Anthropic that needs the `anthropic-dangerous-direct-browser-access` header,
-which is the documented opt-in for exactly this bring-your-own-key case.
-
-### Ollama
-
-A local Ollama server rejects requests from unknown origins by default:
-
-```bash
-OLLAMA_ORIGINS='chrome-extension://*' ollama serve
-```
-
----
-
 ## Data, and where it goes
 
 | What | Where | Synced? |
 |---|---|---|
 | Settings, quick links, world clocks | `storage.sync` | yes |
 | Music playlists | `storage.sync` | yes |
-| API keys | `storage.local` | **no** |
-| Wallpapers | IndexedDB (`tabby-wallpapers`) | no |
-| Notepad, chat transcripts, FX rates | `storage.local` | no |
+| Wallpapers, cached site icons | IndexedDB (`tabby-wallpapers`, `tabby-favicons`) | no |
+| Notepad, to-dos, reminders, timer, cached headlines, weather and FX | `storage.local` | no |
 
 There is no server, no account, no analytics and no telemetry. Outbound
-requests go to the AI provider you configured, Open-Meteo for weather,
-`open.er-api.com` for exchange rates (cached for a day), YouTube for public
-track titles, and a favicon lookup per quick-link hostname.
+requests go to Open-Meteo for weather, `open.er-api.com` for exchange rates
+(cached for a day), YouTube for public track titles, Google News for the
+topics you follow, `ipwho.is` (and `api.ipify.org` on IPv6) while the My IP
+tool is open, and a favicon lookup per quick-link hostname.
 
 Quick-link icons are fetched **once per hostname** and then cached as blobs in
 IndexedDB, so a link never hits the network twice. Only the origin is sent -
@@ -356,14 +328,14 @@ The full policy is in [`privacy/index.html`](privacy/index.html).
 ```
 entrypoints/
   newtab/         the new tab page
-  sidepanel/      docked chat (Chrome)
-  chat/           chat.html - the document the injected iframe points at
+  editor/         the full-page image editor
+  welcome/        the three-step first run
   options/        settings on its own page
-  content.ts      injects only the launcher button
-  background.ts   side panel behaviour, keyboard command, alarms
+  background.ts   toolbar click, alarms, reminder badges
 lib/
-  ai/             provider-agnostic chat layer
   music/          player state, playlist store, link parsing
+  editor.ts       the image editor model and its one render function
+  images.ts       decode, encode, resize, target-size search
   search.ts       hands queries to the browser's own search
   settings.ts     the settings schema + sync-storage hooks
   wallpapers.ts   IndexedDB blob store, downscaling, gradients
@@ -371,24 +343,10 @@ lib/
   calc.ts         expression parser (no eval - MV3's CSP forbids it)
 components/
   ui/             shadcn primitives
-  newtab/ tools/ chat/ settings/ widgets/ music/
+  newtab/ tools/ editor/ settings/ widgets/ music/ welcome/
 player/
   player.html     the hosted YouTube relay (not bundled)
 ```
-
-**Why the chat lives in an iframe.** A content script's `fetch` inherits the
-*host page's* origin, so calling an API host from one is a CORS failure no
-header can fix. `chat.html` runs on the extension origin, where the manifest's
-`host_permissions` actually apply - so the chat streams directly instead of
-relaying every token through a service worker that idles out mid-response. The
-iframe also keeps Tailwind's reset from repainting whatever site you're on.
-
-### Adding a provider
-
-One file under `lib/ai/providers/` implementing the `Provider` interface, plus
-one line in `lib/ai/providers/index.ts`. Nothing in the UI mentions a provider
-by name. Anything OpenAI-shaped is a single call to
-`createOpenAICompatible({...})` - that's all OpenRouter and Ollama are.
 
 ### Adding a tool
 

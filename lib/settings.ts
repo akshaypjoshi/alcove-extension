@@ -8,14 +8,9 @@ import type { NewsTopic } from "./news";
 /**
  * Everything the user can configure lives in one object in `sync` storage,
  * so a fresh browser profile signed into the same account picks up the
- * exact same new tab. Two things deliberately stay out of it:
- *
- *   - API keys, which go in `local` (sync storage is not encrypted, and a
- *     key silently replicating to every machine you sign into is not a
- *     property anyone asked for).
- *   - Wallpaper bitmaps, which go in IndexedDB (see lib/wallpapers.ts).
- *     `sync` caps a single item at 8KB; one photo is three orders of
- *     magnitude past that.
+ * exact same new tab. Wallpaper bitmaps deliberately stay out of it, in
+ * IndexedDB (see lib/wallpapers.ts): `sync` caps a single item at 8KB, and
+ * one photo is three orders of magnitude past that.
  */
 
 export type ThemeMode = "system" | "light" | "dark";
@@ -55,7 +50,7 @@ export type WidgetSize = "sm" | "md";
 
 /**
  * Six anchor zones rather than free x/y. Absolute coordinates would need
- * collision handling against the rails, the dock and the chat button, and
+ * collision handling against the rails, the dock and the music button, and
  * would land somewhere different on every window size. Anchors survive a
  * resize and can't overlap the furniture.
  */
@@ -100,8 +95,16 @@ export interface WidgetInstance {
 
 export type DockPosition = "bottom" | "left" | "right";
 
+export type DockLayout = "dock" | "grid";
+
 export interface DockSettings {
   position: DockPosition;
+  /**
+   * Whether the tools sit on screen as a dock, or behind one button that
+   * opens a labelled grid. The grid trades always-visible icons for names
+   * and an uncluttered page; the dock trades the names for one less click.
+   */
+  layout: DockLayout;
   /** Base icon box in px, before any magnification. */
   size: number;
   magnify: boolean;
@@ -131,12 +134,6 @@ export interface ImageSettings {
   quality: number;
 }
 
-export interface AiSettings {
-  providerId: string;
-  model: string;
-  systemPrompt: string;
-}
-
 export interface Settings {
   version: 1;
   theme: ThemeMode;
@@ -163,6 +160,15 @@ export interface Settings {
   dock: DockSettings;
   /** Ids from lib/tools registry, in dock order. */
   enabledTools: string[];
+  /**
+   * Every tool id this profile has been offered, switched on or not.
+   *
+   * Without it there is no way to tell "turned this off" from "has never
+   * seen it", and a stored enabledTools array beats the defaults on read -
+   * so a tool added in a later version would stay invisible forever to
+   * everyone who already had Alcove installed. See hydrate().
+   */
+  knownTools: string[];
   /** Set once the welcome pass has been seen or skipped. */
   onboarded: boolean;
   showWidgets: boolean;
@@ -176,8 +182,28 @@ export interface Settings {
   /** IANA zones shown by the World Clock tool. */
   worldClocks: string[];
   wallpaper: WallpaperSettings;
-  ai: AiSettings;
 }
+
+/**
+ * Ceilings on the lists that live in the settings object.
+ *
+ * `storage.sync` refuses any single item over 8KB, and the whole of
+ * settings is one item. Measured, a profile with 25 links, 8 widgets and
+ * 15 clocks comes to about 8,050 bytes - so the cliff is reachable by
+ * someone just using the thing, and going over it fails silently: the
+ * write is rejected, the watcher never fires, and every later save fails
+ * the same way.
+ *
+ * Sized from the real costs: roughly 1,960 bytes before any list, then
+ * 147 per link, 217 per widget and 33 per zone. At these caps the worst
+ * case anyone can reach - longest names, every widget stacked and
+ * configured - is about 6,700 bytes, or 82% of the limit.
+ */
+export const LIMITS = {
+  quickLinks: 18,
+  widgets: 8,
+  worldClocks: 12,
+} as const;
 
 export const SEARCH_ENGINES: Record<
   string,
@@ -218,7 +244,13 @@ export const DEFAULT_SETTINGS: Settings = {
   showQuickLinks: true,
   fetchLinkIcons: true,
   showTools: true,
-  dock: { position: "bottom", size: 44, magnify: true, magnification: 1.65 },
+  dock: {
+    position: "bottom",
+    layout: "dock",
+    size: 44,
+    magnify: true,
+    magnification: 1.65,
+  },
   enabledTools: [
     "world-clock",
     "calculator",
@@ -234,7 +266,9 @@ export const DEFAULT_SETTINGS: Settings = {
     "text",
     "news",
     "images",
+    "ip",
   ],
+  knownTools: [],
   onboarded: false,
   showWidgets: true,
   widgetRotate: 20,
@@ -264,12 +298,6 @@ export const DEFAULT_SETTINGS: Settings = {
     dim: 20,
     shuffle: false,
   },
-  ai: {
-    providerId: "anthropic",
-    model: "claude-opus-5",
-    systemPrompt:
-      "You are Alcove, a concise assistant living in a browser new tab. Answer directly, skip preamble, and prefer short paragraphs or tight lists.",
-  },
 };
 
 export const settingsStore = storage.defineItem<Settings>("sync:settings", {
@@ -277,11 +305,53 @@ export const settingsStore = storage.defineItem<Settings>("sync:settings", {
   version: 1,
 });
 
-/** Keyed by provider id. Local-only, never synced. */
-export const apiKeysStore = storage.defineItem<Record<string, string>>(
-  "local:apiKeys",
-  { fallback: {} },
-);
+/**
+ * Erases what the removed AI chat left on the machine.
+ *
+ * Deleting a feature does not delete what it stored, and what this one
+ * stored is the worse half: an API key the user pasted in, and the full
+ * text of every conversation they had with it. Neither has any UI left
+ * that could reach them, so nothing but this will ever clear them.
+ *
+ * The launcher is the other half. It registered a content script for
+ * `<all_urls>` that persists across sessions, so the grant and possibly
+ * the registration outlive the code that used them. Both are handed back
+ * here rather than left to Chrome to tidy up.
+ */
+export async function forgetRemovedChat(): Promise<void> {
+  const keys = [
+    "local:apiKeys",
+    "local:companionEnabled",
+    // One transcript per surface the chat could open in.
+    "local:chat:newtab",
+    "local:chat:sidepanel",
+    "local:chat:floating",
+  ] as const;
+
+  for (const key of keys) {
+    try {
+      await storage.removeItem(key);
+    } catch {
+      // A key that was never written is not a failure; neither is one
+      // browser disagreeing about removing it.
+    }
+  }
+
+  try {
+    await browser.scripting?.unregisterContentScripts({
+      ids: ["alcove-companion"],
+    });
+  } catch {
+    // Already gone, or the permission went with the manifest entry.
+  }
+
+  try {
+    await browser.permissions.remove({ origins: ["<all_urls>"] });
+  } catch {
+    // Never granted, or Firefox refusing to drop it. Either way the
+    // feature it belonged to no longer exists.
+  }
+}
 
 /**
  * A stored object written by an older build is missing whatever keys were
@@ -289,11 +359,73 @@ export const apiKeysStore = storage.defineItem<Record<string, string>>(
  * appear, instead of rendering `undefined` and crashing a toFixed() call
  * three components down.
  */
+/**
+ * The tool ids that shipped before `knownTools` existed.
+ *
+ * A profile written by one of those builds cannot say which tools it was
+ * offered, so it is taken to have seen exactly these. Anything switched
+ * off back then stays off; anything added since is genuinely new and gets
+ * switched on once. This list never grows - later additions are covered
+ * by `knownTools` itself.
+ */
+const TOOLS_BEFORE_KNOWN = [
+  "world-clock",
+  "calculator",
+  "units",
+  "currency",
+  "timer",
+  "reminders",
+  "todos",
+  "notes",
+  "json",
+  "lorem",
+  "color",
+  "text",
+];
+
+/**
+ * Which tools a profile has already been offered.
+ *
+ * `knownTools` answers this outright, but a profile written before it
+ * existed has to be read from its own shape. The twelve above shipped in
+ * the first release; News and Images arrived later, each alongside its own
+ * settings object, so the presence of `news` or `images` is what says this
+ * profile met that tool and chose.
+ *
+ * Listing News among the originals - as this did at first - is not a
+ * harmless guess. It tells every upgrading profile that News was already
+ * offered and declined, so the tool never appears for anyone, and the
+ * result is written into `knownTools` on the next save, where no later
+ * release can tell it apart from a real decision.
+ */
+function toolsOffered(value: Settings): string[] {
+  if (value.knownTools?.length) return value.knownTools;
+
+  const seen = [...(value.enabledTools ?? []), ...TOOLS_BEFORE_KNOWN];
+  if (value.news) seen.push("news");
+  if (value.images) seen.push("images");
+  return seen;
+}
+
 function hydrate(value: Settings | null): Settings {
   if (!value) return DEFAULT_SETTINGS;
+
+  const seen = toolsOffered(value);
+  const enabled = value.enabledTools ?? DEFAULT_SETTINGS.enabledTools;
+  const fresh = DEFAULT_SETTINGS.enabledTools.filter((id) => !seen.includes(id));
+
+  // `ai` belonged to the removed chat. Left in the spread it would be
+  // written back to sync storage forever, costing ~260 bytes of an
+  // 8KB per-item cap for a feature that no longer exists.
+  const { ai: _removed, ...carried } = value as Settings & { ai?: unknown };
+
   return {
     ...DEFAULT_SETTINGS,
-    ...value,
+    ...carried,
+    // New tools join the end of the user's own order rather than jumping
+    // into the middle of it.
+    enabledTools: [...new Set([...enabled, ...fresh])],
+    knownTools: [...new Set([...seen, ...DEFAULT_SETTINGS.enabledTools])],
     wallpaper: { ...DEFAULT_SETTINGS.wallpaper, ...value.wallpaper },
     weather: { ...DEFAULT_SETTINGS.weather, ...value.weather },
     news: { ...DEFAULT_SETTINGS.news, ...value.news },
@@ -305,7 +437,6 @@ function hydrate(value: Settings | null): Settings {
       ...w,
       placement: w.placement ?? "top-right",
     })),
-    ai: { ...DEFAULT_SETTINGS.ai, ...value.ai },
 
     // Hard-wired Google was the setting that produced the captcha: a
     // refererless cross-site jump to /search from an extension origin.
@@ -336,28 +467,35 @@ export function useSettings() {
    * push the new value back into state - one source of truth, and every
    * open tab updates at the same time.
    */
-  const update = useCallback(async (patch: Partial<Settings>) => {
-    const current = hydrate(await settingsStore.getValue());
-    await settingsStore.setValue({ ...current, ...patch });
-  }, []);
+  /**
+   * Patch-style update.
+   *
+   * The patch may be a function of the current settings, which is the
+   * only safe form when the new value is derived from the old one: two
+   * plain-object patches built from the same React render - adding two
+   * quick links quickly, or switching on two tools from the grid - both
+   * carry the same stale array, and the second silently drops the first.
+   *
+   * Sync storage caps one item at 8KB and rate-limits writes, and a
+   * rejection here is otherwise invisible: the watcher never fires, the
+   * control snaps back, and every later save fails the same way.
+   */
+  const update = useCallback(
+    async (patch: Partial<Settings> | ((current: Settings) => Partial<Settings>)) => {
+      try {
+        const current = hydrate(await settingsStore.getValue());
+        const next = typeof patch === "function" ? patch(current) : patch;
+        await settingsStore.setValue({ ...current, ...next });
+      } catch (err) {
+        console.error("[alcove] could not save settings:", err);
+        throw err;
+      }
+    },
+    [],
+  );
 
   const reset = useCallback(() => settingsStore.setValue(DEFAULT_SETTINGS), []);
 
   return { settings, update, reset, loading: settings === null };
 }
 
-export function useApiKeys() {
-  const [keys, setKeys] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    apiKeysStore.getValue().then(setKeys);
-    return apiKeysStore.watch((v) => setKeys(v ?? {}));
-  }, []);
-
-  const setKey = useCallback(async (providerId: string, key: string) => {
-    const current = (await apiKeysStore.getValue()) ?? {};
-    await apiKeysStore.setValue({ ...current, [providerId]: key });
-  }, []);
-
-  return { keys, setKey };
-}

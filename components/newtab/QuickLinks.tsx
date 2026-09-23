@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Settings2 } from "lucide-react";
+import { LayoutGrid, Plus, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,12 +51,22 @@ export default function QuickLinks({
   side = "left",
   onChange,
   onOpenSettings,
+  onOpenTools,
+  toolsActive = false,
 }: {
   links: QuickLink[];
   fetchIcons: boolean;
   side?: "left" | "right";
   onChange: (links: QuickLink[]) => void;
   onOpenSettings: () => void;
+  /**
+   * Given only when the tools are set to the grid layout, which has no
+   * dock of its own. The rail is already the page's list of places to
+   * go, so the grid opens from here rather than from a second button
+   * floating on the wallpaper.
+   */
+  onOpenTools?: () => void;
+  toolsActive?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
@@ -109,6 +119,33 @@ export default function QuickLinks({
         </ul>
 
         <div className="mt-1 flex flex-col gap-1 mt-1.5 border-t border-[var(--glass-line)] pt-1.5">
+          {onOpenTools && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onOpenTools}
+                  aria-haspopup="dialog"
+                  className="text-on-wallpaper flex items-center gap-3.5 rounded-xl px-2.5 py-2.5 transition hover:bg-[var(--glass-fill-hover)]"
+                >
+                  <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+                    <LayoutGrid className="size-[18px]" />
+                    {/* Which tool is open is the one thing the dock showed
+                        for free and a single button cannot. */}
+                    {toolsActive && (
+                      <span className="bg-current absolute -right-1 -bottom-1 size-[5px] rounded-full" />
+                    )}
+                  </span>
+                  <span className="truncate text-sm opacity-0 transition-opacity group-hover/rail:opacity-100">
+                    Tools
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side={side === "left" ? "right" : "left"}>
+                All tools
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -121,7 +158,9 @@ export default function QuickLinks({
                 </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Add a quick link</TooltipContent>
+            <TooltipContent side={side === "left" ? "right" : "left"}>
+              Add a quick link
+            </TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -136,7 +175,7 @@ export default function QuickLinks({
                 </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">
+            <TooltipContent side={side === "left" ? "right" : "left"}>
               Switch to {theme.nextLabel.toLowerCase()}
             </TooltipContent>
           </Tooltip>

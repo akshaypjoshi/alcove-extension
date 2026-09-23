@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import ToolIcon from "@/components/newtab/ToolIcon";
+import { anchorClass, anchorStyle } from "@/lib/dockAnchor";
 import { TOOLS } from "@/lib/tools";
 import type { DockSettings } from "@/lib/settings";
 import { cn } from "@/lib/utils";
@@ -177,22 +179,8 @@ export default function ToolDock({
 
   return (
     <div
-      className={cn(
-        "glass rise fixed z-40 rounded-2xl p-2 transition-transform duration-300 ease-out",
-        dock.position === "bottom" && "left-1/2 -translate-x-1/2",
-        dock.position === "left" && "top-1/2 left-5 -translate-y-1/2",
-        dock.position === "right" && "top-1/2 right-5 -translate-y-1/2",
-        // Only a right-hand dock is in the drawer's way.
-        dock.position === "right" && shifted && "-translate-x-[var(--drawer-shift)]",
-      )}
-      style={{
-        animationDelay: "400ms",
-        // The ticker owns the bottom edge when it is on, so a bottom dock
-        // rides above it. --ticker-h is 0px whenever the strip is hidden.
-        ...(dock.position === "bottom"
-          ? { bottom: "calc(1.25rem + var(--ticker-h, 0px))" }
-          : {}),
-      }}
+      className={cn("glass rise rounded-2xl p-2", anchorClass(dock.position, shifted))}
+      style={{ animationDelay: "400ms", ...anchorStyle(dock.position) }}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
     >
@@ -202,9 +190,9 @@ export default function ToolDock({
           className={cn("flex", vertical ? "flex-col items-center" : "items-end")}
           style={{ gap: GAP }}
         >
-          {tools.map(({ id, label, icon: Icon }, i) => (
+          {tools.map((tool, i) => (
             <li
-              key={id}
+              key={tool.id}
               ref={(el) => {
                 itemsRef.current[i] = el;
               }}
@@ -224,17 +212,19 @@ export default function ToolDock({
               className="shrink-0"
             >
               <button
-                onClick={() => onSelect(id)}
-                aria-label={label}
-                aria-pressed={activeId === id}
+                onClick={() => onSelect(tool.id)}
+                aria-label={tool.label}
+                aria-pressed={activeId === tool.id}
                 className={cn(
                   "text-on-wallpaper relative flex size-full items-center justify-center rounded-xl transition-colors",
                   !dock.magnify && "hover:bg-[var(--glass-fill-hover)]",
-                  !dock.magnify && activeId === id && "bg-[var(--glass-fill-hover)]",
+                  !dock.magnify && activeId === tool.id && "bg-[var(--glass-fill-hover)]",
                 )}
               >
-                <Icon style={{ width: base * 0.45, height: base * 0.45 }} />
-                {dock.magnify && activeId === id && (
+                {/* Short of the slot, so the open-tool dot has somewhere to
+                    sit without landing on the tile. */}
+                <ToolIcon tool={tool} size={base * 0.86} />
+                {dock.magnify && activeId === tool.id && (
                   <span
                     className={cn(
                       "absolute rounded-full bg-current",
