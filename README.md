@@ -27,10 +27,12 @@ tools - on every new tab.
 
 |  |  |
 |---|---|
-| <img src="docs/screenshots/tools-dock.jpg" alt="World Clock open in the drawer, with the dock magnifying under the pointer"> | <img src="docs/screenshots/music.jpg" alt="The music drawer with a YouTube playlist queued"> |
-| **Tools in a drawer.** The dock magnifies under the pointer like the macOS one, or collapses into a labelled grid. | **Music without video.** A YouTube playlist, cover art and a queue - playback survives closing the drawer. |
-| <img src="docs/screenshots/action-menu.jpg" alt="The music button in the corner of the new tab"> | <img src="docs/screenshots/settings.jpg" alt="The settings dialog over a blurred new tab"> |
-| **Music in the corner.** One circular button, out of the way until you want it. | **Everything is a setting.** Glass panels tint to the wallpaper's measured luminance, not the UI theme. |
+| <img src="docs/screenshots/tools-dock.jpg" alt="World Clock open in the drawer, comparing four time zones on a shared strip"> | <img src="docs/screenshots/music.jpg" alt="The music drawer with a YouTube playlist queued"> |
+| **Tools in a drawer.** Each one opens beside the page rather than in a popup. The World Clock compares zones on a shared strip - one column is one instant, everywhere. | **Music without video.** A YouTube playlist, cover art and a queue - playback survives closing the drawer. |
+| <img src="docs/screenshots/tool-grid.jpg" alt="The tool grid: every tool as a labelled tile"> | <img src="docs/screenshots/editor.jpg" alt="The image editor with an arrow drawn over a picture and its colour controls"> |
+| **A dock, or a grid.** The dock magnifies under the pointer like the macOS one; the grid puts every tool behind one button, named. | **An image editor that uploads nothing.** Crop, straighten, grade, and annotate with text, arrows and freehand - all of it on your machine. |
+| <img src="docs/screenshots/settings.jpg" alt="The settings dialog over a blurred new tab"> | |
+| **Everything is a setting.** Glass panels tint to the wallpaper's measured luminance, not the UI theme. | |
 
 ---
 

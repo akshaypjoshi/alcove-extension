@@ -1,21 +1,23 @@
 # Screenshots
 
-These are listing and README assets, captured by hand. They have to be
-re-taken whenever the interface they show changes - an image of a feature
-the package no longer has is a listing rejection, not just a stale doc.
+Captured at **1280x800**, the size the Chrome Web Store accepts (it takes
+1280x800 or 640x400 and nothing else). Re-take them whenever the interface
+they show changes: an image of a feature the package no longer has is a
+listing rejection, not just a stale doc.
 
-Re-capture at **1280x800** (the Chrome Web Store accepts 1280x800 or
-640x400, nothing else) on a clean profile with a wallpaper you are happy
-to publish.
-
-| File | Must show |
+| File | Shows |
 |---|---|
-| `new-tab.jpg` | The whole page: clock, search, quick links rail, dock. The button in the bottom-right corner is the music button - a single circle with a music glyph, not a `+`. |
-| `tools-dock.jpg` | A tool open in the drawer with the dock magnifying under the pointer. The dock has 15 coloured tiles. |
+| `new-tab.jpg` | The page: clock, search, quick-link rail, dock, weather card. |
+| `tools-dock.jpg` | World Clock open in the drawer, comparing four zones. |
 | `music.jpg` | The music drawer with a playlist queued. |
-| `action-menu.jpg` | The music button in the corner. It no longer fans out into a menu; if a second image is wanted here, the tool grid is the better subject. |
-| `settings.jpg` | The settings dialog. Six tabs: Look, Wallpaper, Widgets, Links, Tools, About. There is no AI tab. |
+| `tool-grid.jpg` | The grid layout, every tool named. |
+| `editor.jpg` | The image editor with an arrow selected. |
+| `settings.jpg` | Settings. Six tabs: Look, Wallpaper, Widgets, Links, Tools, About. |
 
-The numbered set in `../store/` is the same pictures sized for the store
-listing, and `4-chat.png` was deleted with the feature it showed - so the
-remaining files are 1, 2, 3 and 5. Renumber them when you next upload.
+`../store/` holds the same shots as PNG, numbered for the listing upload:
+1 new tab, 2 tools, 3 music, 4 editor, 5 settings.
+
+The quick links in these shots use emoji icons rather than fetched
+favicons - the icon services cannot be read cross-origin from the local
+preview, and letters standing in for icons would show a failure state the
+product does not have.
