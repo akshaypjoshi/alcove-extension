@@ -1,14 +1,30 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  boundsOf,
+  LINE_HEIGHT,
+  ROTATE_KNOB,
+  boxHandle,
+  cursorFor,
+  frameOf,
+  handleAt,
+  handlesFor,
   hitTest,
   imageTransform,
+  insideFrame,
+  layerMatrix,
   moveLayer,
+  normalizeShape,
   outputSize,
   render,
+  resizeLayer,
+  rotateLayer,
+  sharedMeasure,
+  textFont,
+  textPad,
   toImageSpace,
   type EditState,
+  type HandleId,
   type Layer,
+  type Point,
   type Rect,
   type ShapeLayer,
   type StrokeLayer,
@@ -22,9 +38,11 @@ export interface DrawStyle {
   fontSize: number;
 }
 
+const ACCENT = "#3b82f6";
+
 /**
  * Two stacked canvases: the image and its layers on one, selection handles
- * and the in-progress shape on another.
+ * and the crop rectangle on another.
  *
  * Keeping the handles off the image canvas is not tidiness. Export re-runs
  * the very same render call at full scale, so anything painted onto that
@@ -36,28 +54,57 @@ export default function Canvas({
   tool,
   style,
   selectedId,
+  editingId,
   onSelect,
   onPreview,
   onCommit,
+  onToolChange,
+  onCreateText,
+  onEditText,
+  onTextChange,
+  onEditDone,
 }: {
   bitmap: ImageBitmap;
   state: EditState;
   tool: Tool;
   style: DrawStyle;
   selectedId: string | null;
+  editingId: string | null;
   onSelect: (id: string | null) => void;
-  /** Continuous updates while dragging. Not undoable. */
+  /** Continuous updates while dragging. */
   onPreview: (state: EditState) => void;
-  /** End of a gesture. This is what lands in the undo stack. */
+  /** End of a gesture: one undo step. */
   onCommit: (state: EditState) => void;
+  onToolChange: (tool: Tool) => void;
+  onCreateText: (at: Point) => void;
+  onEditText: (id: string) => void;
+  onTextChange: (id: string, text: string) => void;
+  onEditDone: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
+  const areaRef = useRef<HTMLTextAreaElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [draft, setDraft] = useState<Layer | null>(null);
   const [cropDraft, setCropDraft] = useState<Rect | null>(null);
+  const [cursor, setCursor] = useState("default");
+  /**
+   * Where a Text-tool press landed, waiting for the click to complete.
+   *
+   * The text box is opened on click rather than on pointer-down for one
+   * reason: pressing the mouse makes the browser move focus to whatever
+   * was pressed, and that focus change lands *after* pointer-down. A box
+   * opened and focused during pointer-down is blurred a moment later,
+   * which finishes the edit while the label is still empty, so it is
+   * thrown away and clicking appears to do nothing.
+   *
+   * By click time the browser has already moved focus, so focusing the
+   * box afterwards is uncontested. No race to win.
+   */
+  const pendingText = useRef<Point | null>(null);
 
+  const measure = sharedMeasure();
   const out = outputSize(bitmap, state);
   // Never upscale: a small image blown up to fill the page just looks
   // broken, and the export is unaffected either way.
@@ -65,92 +112,188 @@ export default function Canvas({
   const cssWidth = Math.max(1, Math.round(out.width * fitScale));
   const cssHeight = Math.max(1, Math.round(out.height * fitScale));
   const dpr = window.devicePixelRatio || 1;
+  // Image units per screen pixel. Handle sizes and hit slack are set in
+  // screen pixels, so they stay grabbable on a 6000px photo.
+  const unit = 1 / fitScale;
+
+  const selected = state.layers.find((l) => l.id === selectedId) ?? null;
+  const editing =
+    (state.layers.find((l) => l.id === editingId && l.kind === "text") as TextLayer | undefined) ??
+    null;
 
   useLayoutEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
     const ro = new ResizeObserver(([entry]) =>
-      setBox({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      }),
+      setBox({ width: entry.contentRect.width, height: entry.contentRect.height }),
     );
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-
-  // Text measurement needs a context, so it is borrowed from the live one
-  // rather than kept in the model where it would go stale on a font change.
-  const measure = (layer: TextLayer) => {
-    const ctx = baseRef.current?.getContext("2d");
-    if (!ctx) return layer.text.length * layer.size * 0.5;
-    ctx.save();
-    ctx.font = `${layer.weight} ${layer.size}px ui-sans-serif, system-ui, sans-serif`;
-    const width = ctx.measureText(layer.text).width;
-    ctx.restore();
-    return width;
-  };
 
   // The image and its layers.
   useEffect(() => {
     const canvas = baseRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-
     canvas.width = Math.round(cssWidth * dpr);
     canvas.height = Math.round(cssHeight * dpr);
+    const shown: EditState = draft ? { ...state, layers: [...state.layers, draft] } : state;
+    render(ctx, bitmap, shown, fitScale * dpr, editingId);
+  }, [bitmap, state, draft, editingId, cssWidth, cssHeight, fitScale, dpr]);
 
-    const shown: EditState = draft
-      ? { ...state, layers: [...state.layers, draft] }
-      : state;
-    render(ctx, bitmap, shown, fitScale * dpr);
-  }, [bitmap, state, draft, cssWidth, cssHeight, fitScale, dpr]);
-
-  // Handles, and the crop rectangle while it is being dragged.
+  // Outline, handles, and the crop rectangle while it is being dragged.
   useEffect(() => {
     const canvas = overlayRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-
     canvas.width = Math.round(cssWidth * dpr);
     canvas.height = Math.round(cssHeight * dpr);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const m = imageTransform(bitmap, state, fitScale * dpr);
     ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
-    // Handles should stay one pixel wide however far the image is zoomed.
-    const hair = 1 / (fitScale * dpr);
+    const px = 1 / fitScale;
 
-    const active = state.layers.find((l) => l.id === selectedId);
-    if (active) {
-      const b = boundsOf(active, measure);
-      ctx.strokeStyle = "#3b82f6";
-      ctx.lineWidth = hair * 2;
-      ctx.setLineDash([hair * 6, hair * 4]);
-      ctx.strokeRect(b.x, b.y, b.w, b.h);
-      ctx.setLineDash([]);
+    if (selected && !editing) {
+      ctx.save();
+      ctx.strokeStyle = ACCENT;
+      ctx.fillStyle = "#fff";
+      ctx.lineWidth = 1.5 * px;
+
+      if (selected.kind === "arrow") {
+        for (const [x, y] of [
+          [selected.x, selected.y],
+          [selected.x + selected.w, selected.y + selected.h],
+        ]) {
+          ctx.beginPath();
+          ctx.arc(x, y, 6 * px, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      } else {
+        const lm = layerMatrix(selected, measure);
+        ctx.transform(lm.a, lm.b, lm.c, lm.d, lm.e, lm.f);
+        const f = frameOf(selected, measure);
+
+        ctx.setLineDash([5 * px, 3 * px]);
+        ctx.strokeRect(f.x, f.y, f.w, f.h);
+        ctx.setLineDash([]);
+
+        const handles = handlesFor(selected);
+        if (handles.includes("rotate")) {
+          const top = { x: f.x + f.w / 2, y: f.y };
+          ctx.beginPath();
+          ctx.moveTo(top.x, top.y);
+          ctx.lineTo(top.x, top.y - ROTATE_KNOB * px);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(top.x, top.y - ROTATE_KNOB * px, 5.5 * px, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        const side = 8 * px;
+        for (const id of handles) {
+          const pos = boxHandle(id);
+          if (!pos) continue;
+          const hx = f.x + pos[0] * f.w;
+          const hy = f.y + pos[1] * f.h;
+          ctx.fillRect(hx - side / 2, hy - side / 2, side, side);
+          ctx.strokeRect(hx - side / 2, hy - side / 2, side, side);
+        }
+      }
+      ctx.restore();
     }
 
-    const crop = cropDraft;
-    if (crop) {
+    if (cropDraft) {
       ctx.fillStyle = "rgba(0,0,0,0.45)";
       ctx.beginPath();
       ctx.rect(0, 0, bitmap.width, bitmap.height);
-      ctx.rect(crop.x, crop.y, crop.w, crop.h);
+      ctx.rect(cropDraft.x, cropDraft.y, cropDraft.w, cropDraft.h);
       ctx.fill("evenodd");
       ctx.strokeStyle = "#fff";
-      ctx.lineWidth = hair * 2;
-      ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+      ctx.lineWidth = 1.5 * px;
+      ctx.strokeRect(cropDraft.x, cropDraft.y, cropDraft.w, cropDraft.h);
     }
-  }, [bitmap, state, selectedId, cropDraft, cssWidth, cssHeight, fitScale, dpr]);
+  }, [bitmap, state, selected, editing, cropDraft, cssWidth, cssHeight, fitScale, dpr, measure]);
 
-  const pointInImage = (e: React.PointerEvent) => {
-    const rect = baseRef.current!.getBoundingClientRect();
+  // A label opened for editing takes the keyboard at once, caret at the end.
+  useEffect(() => {
+    if (!editingId) return;
+    const el = areaRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [editingId]);
+
+  const toPoint = (clientX: number, clientY: number): Point => {
+    const r = baseRef.current!.getBoundingClientRect();
     return toImageSpace(
-      { x: (e.clientX - rect.left) * dpr, y: (e.clientY - rect.top) * dpr },
+      { x: (clientX - r.left) * dpr, y: (clientY - r.top) * dpr },
       bitmap,
       state,
       fitScale * dpr,
+    );
+  };
+
+  const track = (
+    onMove: (p: Point, ev: PointerEvent) => void,
+    onUp: () => void,
+  ) => {
+    const move = (ev: PointerEvent) => onMove(toPoint(ev.clientX, ev.clientY), ev);
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      onUp();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const replace = (layers: Layer[], layer: Layer) =>
+    layers.map((l) => (l.id === layer.id ? layer : l));
+
+  /** Resize or rotate. Shift keeps proportions, or snaps to 15 degrees. */
+  const transform = (layer: Layer, handle: HandleId, start: Point) => {
+    let current = state;
+    let changed = false;
+    track(
+      (p, ev) => {
+        const next =
+          handle === "rotate"
+            ? rotateLayer(layer, start, p, measure, ev.shiftKey)
+            : resizeLayer(layer, handle, p, measure, { uniform: ev.shiftKey, min: 4 * unit });
+        changed = true;
+        current = { ...state, layers: replace(state.layers, next) };
+        onPreview(current);
+      },
+      () => {
+        if (changed) onCommit(current);
+      },
+    );
+  };
+
+  const drag = (layer: Layer, start: Point) => {
+    let last = start;
+    let moved = false;
+    let current = state;
+    track(
+      (p) => {
+        const dx = p.x - last.x;
+        const dy = p.y - last.y;
+        // A couple of pixels of slop, so a click to select stays a click.
+        if (!moved && Math.hypot(dx, dy) < 2 * unit) return;
+        moved = true;
+        last = p;
+        const now = current.layers.find((l) => l.id === layer.id);
+        if (!now) return;
+        current = { ...current, layers: replace(current.layers, moveLayer(now, dx, dy)) };
+        onPreview(current);
+      },
+      () => {
+        if (moved) onCommit(current);
+      },
     );
   };
 
@@ -160,109 +303,90 @@ export default function Canvas({
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
       // Throws if the pointer was released between the event and here.
-      // Capture is a nicety; losing it must not abort the whole gesture,
-      // which is what an uncaught throw here would do.
+      // Capture is a nicety; losing it must not abort the gesture.
     }
-    const start = pointInImage(e);
+
+    // The first click away from a label finishes it, as in any editor,
+    // rather than also starting whatever that click would otherwise do.
+    if (editingId) {
+      pendingText.current = null;
+      onEditDone();
+      return;
+    }
+
+    const start = toPoint(e.clientX, e.clientY);
+
+    // Handles answer whatever tool is active, so a shape can be resized
+    // or turned the moment it has been drawn.
+    if (selected && tool !== "crop") {
+      const handle = handleAt(selected, start, measure, unit);
+      if (handle) {
+        transform(selected, handle, start);
+        return;
+      }
+    }
 
     if (tool === "crop") {
       let rect: Rect = { x: start.x, y: start.y, w: 0, h: 0 };
-      const move = (ev: PointerEvent) => {
-        const p = toImageSpace(
-          {
-            x: (ev.clientX - baseRef.current!.getBoundingClientRect().left) * dpr,
-            y: (ev.clientY - baseRef.current!.getBoundingClientRect().top) * dpr,
-          },
-          bitmap,
-          state,
-          fitScale * dpr,
-        );
-        rect = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
-        setCropDraft(rect);
-      };
-      const up = () => {
-        window.removeEventListener("pointermove", move);
-        window.removeEventListener("pointerup", up);
-        setCropDraft(null);
-        // A stray click should not crop the image down to nothing.
-        if (rect.w > 8 && rect.h > 8) {
-          onCommit({
-            ...state,
-            crop: {
-              x: Math.max(0, Math.round(rect.x)),
-              y: Math.max(0, Math.round(rect.y)),
-              w: Math.min(bitmap.width, Math.round(rect.w)),
-              h: Math.min(bitmap.height, Math.round(rect.h)),
-            },
-          });
-        }
-      };
-      window.addEventListener("pointermove", move);
-      window.addEventListener("pointerup", up);
+      track(
+        (p) => {
+          rect = {
+            x: Math.min(start.x, p.x),
+            y: Math.min(start.y, p.y),
+            w: Math.abs(p.x - start.x),
+            h: Math.abs(p.y - start.y),
+          };
+          setCropDraft(rect);
+        },
+        () => {
+          setCropDraft(null);
+          // A stray click should not crop the image down to nothing.
+          if (rect.w > 8 && rect.h > 8) {
+            onCommit({
+              ...state,
+              crop: {
+                x: Math.max(0, Math.round(rect.x)),
+                y: Math.max(0, Math.round(rect.y)),
+                w: Math.min(bitmap.width, Math.round(rect.w)),
+                h: Math.min(bitmap.height, Math.round(rect.h)),
+              },
+            });
+          }
+        },
+      );
       return;
     }
 
     if (tool === "select") {
-      const hit = hitTest(state, start, measure);
-      onSelect(hit?.id ?? null);
-      if (!hit) return;
-
-      let last = start;
-      let moved = false;
-      let current = state;
-      const move = (ev: PointerEvent) => {
-        const rect = baseRef.current!.getBoundingClientRect();
-        const p = toImageSpace(
-          { x: (ev.clientX - rect.left) * dpr, y: (ev.clientY - rect.top) * dpr },
-          bitmap,
-          state,
-          fitScale * dpr,
-        );
-        const dx = p.x - last.x;
-        const dy = p.y - last.y;
-        if (!moved && Math.hypot(dx, dy) < 1) return;
-        moved = true;
-        last = p;
-        current = {
-          ...current,
-          layers: current.layers.map((l) => (l.id === hit.id ? moveLayer(l, dx, dy) : l)),
-        };
-        onPreview(current);
-      };
-      const up = () => {
-        window.removeEventListener("pointermove", move);
-        window.removeEventListener("pointerup", up);
-        // Only a real move is worth an undo step.
-        if (moved) onCommit(current);
-      };
-      window.addEventListener("pointermove", move);
-      window.addEventListener("pointerup", up);
+      // Anywhere inside the selected object's frame drags it. A thin pen
+      // stroke is otherwise very hard to pick up a second time.
+      const target =
+        selected && insideFrame(selected, start, measure, 4 * unit)
+          ? selected
+          : hitTest(state, start, measure, 6 * unit);
+      onSelect(target?.id ?? null);
+      if (target) drag(target, start);
       return;
     }
 
     if (tool === "text") {
-      const layer: TextLayer = {
-        id: crypto.randomUUID(),
-        kind: "text",
-        x: start.x,
-        y: start.y,
-        text: "Double-click to edit",
-        size: style.fontSize,
-        color: style.color,
-        weight: 600,
-        plate: true,
-      };
-      onCommit({ ...state, layers: [...state.layers, layer] });
-      onSelect(layer.id);
+      // Opened by the click handler below, once focus has settled.
+      pendingText.current = start;
       return;
     }
 
+    // Pen, arrow, rectangle, ellipse.
     const id = crypto.randomUUID();
-    // Narrowed deliberately: the select, text and crop tools have all
-    // returned by here, so what is left can only be a stroke or a shape.
     let working: StrokeLayer | ShapeLayer =
       tool === "pen"
-        ? { id, kind: "stroke", points: [[start.x, start.y]], color: style.color, width: style.width }
+        ? {
+            id,
+            kind: "stroke",
+            points: [[start.x, start.y]],
+            color: style.color,
+            width: style.width,
+            rotation: 0,
+          }
         : {
             id,
             kind: tool as ShapeLayer["kind"],
@@ -272,38 +396,112 @@ export default function Canvas({
             h: 0,
             color: style.color,
             width: style.width,
+            rotation: 0,
           };
 
-    const move = (ev: PointerEvent) => {
-      const rect = baseRef.current!.getBoundingClientRect();
-      const p = toImageSpace(
-        { x: (ev.clientX - rect.left) * dpr, y: (ev.clientY - rect.top) * dpr },
-        bitmap,
-        state,
-        fitScale * dpr,
-      );
-      working =
-        working.kind === "stroke"
-          ? { ...working, points: [...working.points, [p.x, p.y]] }
-          : { ...working, w: p.x - start.x, h: p.y - start.y };
-      setDraft(working);
-    };
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      setDraft(null);
-      const meaningful =
-        working.kind === "stroke"
-          ? working.points.length > 1
-          : Math.hypot(working.w, working.h) > 4;
-      if (meaningful) {
-        onCommit({ ...state, layers: [...state.layers, working] });
-        onSelect(id);
-      }
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    track(
+      (p) => {
+        working =
+          working.kind === "stroke"
+            ? { ...working, points: [...working.points, [p.x, p.y]] }
+            : { ...working, w: p.x - start.x, h: p.y - start.y };
+        setDraft(working);
+      },
+      () => {
+        setDraft(null);
+        const meaningful =
+          working.kind === "stroke"
+            ? working.points.length > 1
+            : Math.hypot(working.w, working.h) > 4 * unit;
+        if (!meaningful) return;
+        const layer = normalizeShape(working);
+        onCommit({ ...state, layers: [...state.layers, layer] });
+        onSelect(layer.id);
+        // A shape hands straight over to Select so it can be moved,
+        // resized or turned at once. The pen stays a pen: strokes come in
+        // runs, and its handles still work while it is active.
+        if (tool !== "pen") onToolChange("select");
+      },
+    );
   };
+
+  const onClick = () => {
+    const at = pendingText.current;
+    pendingText.current = null;
+    if (!at) return;
+    const hit = hitTest(state, at, measure, 4 * unit);
+    if (hit?.kind === "text") {
+      onSelect(hit.id);
+      onEditText(hit.id);
+      return;
+    }
+    onCreateText(at);
+  };
+
+  const onDoubleClick = (e: React.MouseEvent) => {
+    const hit = hitTest(state, toPoint(e.clientX, e.clientY), measure, 4 * unit);
+    if (hit?.kind === "text") {
+      onSelect(hit.id);
+      onEditText(hit.id);
+    }
+  };
+
+  const onHover = (e: React.PointerEvent) => {
+    if (e.buttons) return;
+    const p = toPoint(e.clientX, e.clientY);
+    let next = tool === "text" ? "text" : tool === "select" ? "default" : "crosshair";
+
+    if (!editing && selected && tool !== "crop") {
+      const handle = handleAt(selected, p, measure, unit);
+      if (handle) next = cursorFor(handle, selected, state);
+      else if (tool === "select" && insideFrame(selected, p, measure, 4 * unit)) next = "move";
+    }
+    if (next === "default" && tool === "select" && hitTest(state, p, measure, 6 * unit)) {
+      next = "move";
+    }
+    setCursor(next);
+  };
+
+  // The text box sits exactly over the label it edits, built from the same
+  // matrices the renderer uses, so it follows a crop, a rotation of the
+  // image, and the label's own rotation without separate positioning code.
+  let editor: React.CSSProperties | null = null;
+  if (editing) {
+    const f = frameOf(editing, measure);
+    const m = imageTransform(bitmap, state, fitScale)
+      .multiply(layerMatrix(editing, measure))
+      .translate(f.x, f.y);
+    const pad = textPad(editing.size);
+    editor = {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      transformOrigin: "0 0",
+      transform: `matrix(${m.a}, ${m.b}, ${m.c}, ${m.d}, ${m.e}, ${m.f})`,
+      boxSizing: "border-box",
+      // A little spare room so the next letter never wraps before the
+      // box has been re-measured around it.
+      width: f.w + editing.size * 0.6,
+      height: f.h,
+      margin: 0,
+      border: 0,
+      resize: "none",
+      overflow: "hidden",
+      whiteSpace: "pre",
+      font: textFont(editing),
+      lineHeight: LINE_HEIGHT,
+      color: editing.color,
+      caretColor: editing.color,
+      background: editing.plate ? "rgba(0,0,0,0.55)" : "transparent",
+      borderRadius: editing.size * 0.22,
+      // CSS centres a line inside its line-height; the canvas draws glyphs
+      // from the top of the em box. Nudging the top padding by the
+      // half-leading lines the two up.
+      padding: `${pad * 0.7 - editing.size * 0.125}px ${pad}px 0 ${pad}px`,
+      outline: `${1.5 * unit}px dashed ${ACCENT}`,
+      outlineOffset: `${3 * unit}px`,
+    };
+  }
 
   return (
     <div
@@ -319,9 +517,32 @@ export default function Canvas({
         <canvas
           ref={overlayRef}
           onPointerDown={onPointerDown}
-          style={{ width: cssWidth, height: cssHeight }}
+          onClick={onClick}
+          onPointerMove={onHover}
+          onDoubleClick={onDoubleClick}
+          style={{ width: cssWidth, height: cssHeight, cursor }}
           className="absolute inset-0 touch-none"
         />
+        {editing && editor && (
+          <textarea
+            ref={areaRef}
+            value={editing.text}
+            spellCheck={false}
+            aria-label="Label text"
+            placeholder="Type…"
+            onChange={(e) => onTextChange(editing.id, e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === "Escape" || (e.key === "Enter" && (e.metaKey || e.ctrlKey))) {
+                e.preventDefault();
+                onEditDone();
+              }
+            }}
+            onBlur={onEditDone}
+            onPointerDown={(e) => e.stopPropagation()}
+            style={editor}
+          />
+        )}
       </div>
     </div>
   );

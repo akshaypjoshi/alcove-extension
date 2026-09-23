@@ -13,6 +13,7 @@ import {
 import {
   FORMATS,
   FORMAT_LABEL,
+  clipboardImages,
   decode,
   download,
   encode,
@@ -70,7 +71,7 @@ export default function Images() {
     [],
   );
 
-  const addFiles = async (files: FileList | null | undefined) => {
+  const addFiles = async (files: ArrayLike<File> | null | undefined) => {
     if (!files?.length) return;
     const added: Item[] = [];
     for (const file of Array.from(files)) {
@@ -93,6 +94,30 @@ export default function Images() {
     }
     setItems((current) => [...current, ...added]);
   };
+
+  // Paste. The tool unmounts when the drawer closes, so this is listening
+  // only while the panel is actually on screen, and a ref keeps the handler
+  // stable while still seeing the current `addFiles`.
+  const addRef = useRef(addFiles);
+  addRef.current = addFiles;
+  useEffect(() => {
+    const onPaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (typing) return;
+
+      const files = clipboardImages(event.clipboardData);
+      if (!files.length) return;
+      event.preventDefault();
+      void addRef.current(files);
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, []);
 
   const run = async () => {
     setBusy(true);
@@ -192,6 +217,9 @@ export default function Images() {
       >
         <ImagePlus className="text-muted-foreground size-4" />
         Drop images here, or choose them
+        <span className="text-muted-foreground text-xs">
+          Screenshots paste straight in
+        </span>
       </button>
 
       {items.length > 0 && (

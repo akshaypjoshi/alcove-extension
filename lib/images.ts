@@ -221,6 +221,43 @@ export function download(blob: Blob, filename: string): void {
   setTimeout(revoke, 0);
 }
 
+/**
+ * The images on a paste, as files.
+ *
+ * Two shapes have to be handled because browsers disagree: a screenshot
+ * pasted from the OS arrives under `items`, while a file copied from a file
+ * manager arrives under `files`. Reading both and preferring `items` covers
+ * each without listing the same image twice.
+ *
+ * A pasted screenshot is nameless, or named `image.png` by every paste
+ * alike, so it is stamped here. Otherwise a batch of three pastes is three
+ * identical rows, and they all download over each other.
+ */
+export function clipboardImages(data: DataTransfer | null | undefined): File[] {
+  if (!data) return [];
+
+  const found = Array.from(data.items ?? [])
+    .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file !== null);
+
+  const files = found.length
+    ? found
+    : Array.from(data.files ?? []).filter((file) => file.type.startsWith("image/"));
+
+  return files.map(stamped);
+}
+
+/** Generic clipboard names become distinguishable ones. */
+function stamped(file: File): File {
+  if (file.name && file.name !== "image.png") return file;
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const when = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const extension = EXTENSION[file.type as Format] ?? "png";
+  return new File([file], `pasted-${when}.${extension}`, { type: file.type });
+}
+
 /** "holiday.png" and JPEG gives "holiday.jpg". */
 export function renameFor(name: string, type: Format): string {
   const stem = name.replace(/\.[^.]+$/, "") || "image";
